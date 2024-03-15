@@ -106,8 +106,8 @@ button:focus-visible {
 }
 
 .live-player {
-    height: 225px;
-    width: 450px;
+    height: 250px;
+    width: 500px;
     border: 10px solid #646cff;
     margin-bottom: 30px;
 }
@@ -144,6 +144,6 @@ button:focus-visible {
 }
 
 .textbox {
-  padding:15px;
+  width: 200 
 }
 
