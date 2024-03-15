@@ -14,7 +14,7 @@
 }
 
 a {
-  font-weight: 500;
+  font-weight: 500px;
   color: #646cff;
   text-decoration: inherit;
 }
@@ -27,12 +27,12 @@ body {
   margin: 0;
   display: flex;
   place-items: start;
-  min-width: 320px;
+  min-width: 500px;
   min-height: 100vh;
 }
 
 h1 {
-  font-size: 10em;
+  font-size: 5em;
   margin-bottom: 10px;
 }
 
@@ -41,15 +41,15 @@ h2 {
 }
 
 img {
-  margin-bottom: 50px;
+  margin-bottom: 5px;
 }
 
 button {
-  border-radius: 8px;
+  border-radius: 50px;
   border: 1px solid transparent;
-  padding: 1.5em 1.5em;
+  padding: 0.5em 1.5em;
   font-size: 1.5em;
-  font-weight: 500;
+  font-weight: 250;
   font-family: inherit;
   background-color: #747bff;
   cursor:pointer;
@@ -82,7 +82,7 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 250px;
+  gap: 25px;
 }
 
 .audio-controls,
@@ -106,8 +106,8 @@ button:focus-visible {
 }
 
 .live-player {
-    height: 500px;
-    width: 1000px;
+    height: 225px;
+    width: 450px;
     border: 10px solid #646cff;
     margin-bottom: 30px;
 }
@@ -143,7 +143,7 @@ button:focus-visible {
   border-style: groove;
 }
 
-h3 {
-  color: black;
-  margin-bottom: 100px;
+.textbox {
+  padding:15px;
 }
+

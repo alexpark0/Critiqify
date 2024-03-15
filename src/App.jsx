@@ -10,8 +10,18 @@ const App = () => {
             setRecordOption(type);
         };
     };
+    const [val, setVal] = useState("Enter Critiques Here")
+    const click = () => {
+        alert(val)
+    }
+    const change = event => {
+        setVal(event.target.value)
+    }
     return (
         <>
+        <div>
+        <img src = "IMG_2921.jpg" alt="alex park" width="128" height="64"></img>
+        </div>
         <div className = "alex-park-homescreen">
             <button className="button-left">Home</button>
             <button className="button-middle">About</button>
@@ -21,9 +31,6 @@ const App = () => {
         <div>
             <h1>Alex Park App</h1>
             <h2>Record yourself doing a presentation!</h2>
-            <img src = "IMG_2921.jpg" alt="alex park" width="1024" height="256">
-
-            </img>
             <div className="button-flex">
                 <button onClick={toggleRecordOption("video")}>
                     Record Video
@@ -35,11 +42,16 @@ const App = () => {
             <div>
                 {recordOption === "video" ? <VideoRecorder /> : <AudioRecorder />}
             </div>
-        </div>
-        <p>fuck you alex park why doesn't your bitch ass 
-            actually come to oasis meetings</p>
-        <p>kasa looking headass
-            ricky montgomery looking headass</p></>
+            <div className = "textbox">
+                <form>
+                    <label>
+                        Critique: 
+                        <input type="text" name="lastCritique" />
+                    </label>
+                    <input type="submit" value="Enter" />
+                </form>
+            </div>
+        </div></>
     );
 };
 
