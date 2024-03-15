@@ -52,7 +52,7 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #747bff;
-  cursor:pointer;
+  cursor: pointer;
   transition: border-color 0.5s;
 }
 
@@ -87,37 +87,36 @@ button:focus-visible {
 
 .audio-controls,
 .video-controls {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .audio-player,
 .video-player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .audio-player,
 .video-player,
 .recorded-player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .live-player {
-    height: 500px;
-    width: 1000px;
-    border: 10px solid #646cff;
-    margin-bottom: 30px;
+  height: 500px;
+  width: 1000px;
+  border: 10px solid #646cff;
+  margin-bottom: 30px;
 }
 
 .recorded-player video {
-    height: 400px;
-    width: 800px;
-    border: 10px solid #646cff;
+  height: 400px;
+  width: 800px;
+  border: 10px solid #646cff;
 }
-
 
 .alex-park-homescreen {
   display: flex;
@@ -138,7 +137,9 @@ button:focus-visible {
   margin-right: 0;
 }
 
-.button-left, .button-middle, .button-right {
+.button-left,
+.button-middle,
+.button-right {
   padding: 6px;
   border-style: groove;
 }
