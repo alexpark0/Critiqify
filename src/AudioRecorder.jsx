@@ -25,11 +25,8 @@ const AudioRecorder = () => {
     };
     const startRecording = async () => {
         setRecordingStatus("recording");
-        //create new Media recorder instance using the stream
         const media = new MediaRecorder(stream, { type: mimeType });
-        //set the MediaRecorder instance to the mediaRecorder ref
         mediaRecorder.current = media;
-        //invokes the start method to start the recording process
         mediaRecorder.current.start();
         let localAudioChunks = [];
         mediaRecorder.current.ondataavailable = (event) => {
