@@ -21,13 +21,12 @@ const App = () => {
     <>
       <div className="alex-park-homescreen">
         <button className="button-left">Home</button>
+        <h1>ALEX PARK APP</h1>
         <button className="button-middle">About</button>
-        <button className="button-middle">Services</button>
         <button className="button-right">Contact</button>
       </div>
       <div>
-        <h1>App</h1>
-        <h2>Record yourself doing a presentation!</h2>
+        <h2>Record Yourself Doing a Presentation!</h2>
         <div className="button-flex">
           <button onClick={toggleRecordOption("video")}>Record Video</button>
           <button onClick={toggleRecordOption("audio")}>Record Audio</button>
