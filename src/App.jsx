@@ -52,23 +52,23 @@ const App = () => {
         </div>
       </div>
       <div className={toggle === 2 ? "show-content" : "content"}>
-        <h1>
+        <h2>
           App used to record and self-critique video presentations.
-        </h1>
+        </h2>
       </div>
       <div className={toggle === 3 ? "show-content" : "content"}>
-        <h1>
+        <h2>
           Alex Park :   park.ale@northeastern.edu
-        </h1>
-        <h1>
+        </h2>
+        <h2>
           Aiden Rim :   rim.a@northeastern.edu
-        </h1>
-        <h1>
+        </h2>
+        <h2>
           Bryan Li  :   li.brya@northeastern.edu
-        </h1>
-        <h1>
+        </h2>
+        <h2>
           Colin Chu :   chu.col@northeastern.edu
-        </h1>
+        </h2>
       </div>
     </>
   );
