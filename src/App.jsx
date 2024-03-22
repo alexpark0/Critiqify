@@ -28,7 +28,7 @@ const App = () => {
     <>
       <div className="alex-park-homescreen">
         <button className="button-left" onClick={()=>updateToggle(1)}>Home</button>
-        <h1>ALEX PARK APP</h1>
+        <h1>CRITIQIFY</h1>
         <button className="button-middle" onClick={()=>updateToggle(2)}>About</button>
         <button className="button-right" onClick={()=>updateToggle(3)}>Credits</button>
       </div>
