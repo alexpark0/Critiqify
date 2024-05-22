@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { Form } from 'react-bootstrap';
+
 const VideoRecorder = () => {
   const [permission, setPermission] = useState(false);
   const mediaRecorder = useRef(null);
@@ -7,6 +9,8 @@ const VideoRecorder = () => {
   const [stream, setStream] = useState(null);
   const [videoChunks, setVideoChunks] = useState([]);
   const [recordedVideo, setRecordedVideo] = useState(null);
+  const [value, setValue] = useState(),
+  onInput = ({target:{value}}) => setValue(value);
 
   const getCameraPermission = async () => {
     setRecordedVideo(null);
@@ -92,9 +96,16 @@ const VideoRecorder = () => {
         {recordedVideo ? (
           <div className="recorded-player">
             <video className="recorded" src={recordedVideo} controls></video>
-            <a download href={recordedVideo}>
-              Download Recording
-            </a>
+            <h2>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Notes:</Form.Label>
+                  <br></br>
+                  <Form.Control type ="text" placeholder="Enter notes here" 
+                  as="textarea" rows={3} cols={100} onChange={onInput}/>
+                </Form.Group>
+              </Form>
+            </h2>
           </div>
         ) : null}
       </div>

@@ -2,7 +2,7 @@ import "./App.css";
 import { useState, useRef } from "react";
 import VideoRecorder from "../src/VideoRecorder";
 import AudioRecorder from "../src/AudioRecorder";
-//import {useVolumeLevel, VolumeIndicator} from 'react-volume-indicator'
+import Gemini from "./Gemini";
 
 const App = () => {
   let [recordOption, setRecordOption] = useState("video");
@@ -52,7 +52,7 @@ const App = () => {
         <img src = "https://media.discordapp.net/attachments/799331016489042020/1224050139186991205/Screenshot_2024-03-31_at_1.37.57_PM.png?ex=661c1486&is=66099f86&hm=f9c8e74b3c2d70ac91c5bbf7d4b9ad6b8714dc24db13e011ba49cd8d4f1312e5&=&format=webp&quality=lossless&width=1100&height=578" alt="example" width="1024" height="512"></img>
       </div>
       <div className={toggle === 2 ? "show-content" : "content"}>
-        <h2>Record Yourself Doing a Presentation!</h2>
+        <h2>Record a Presentation!</h2>
         <div className="button-flex">
           <button onClick={toggleRecordOption("video")}>Record Video</button>
           <button onClick={toggleRecordOption("audio")}>Record Audio</button>
@@ -60,14 +60,15 @@ const App = () => {
         <div>
           {recordOption === "video" ? <VideoRecorder /> : <AudioRecorder />}
         </div>
-        <div className="textbox">
+        {/* <div className="textbox">
           <form>
             <label>
-              Critique: <input type="text" name="lastCritique" />
+              Notes: <input type="text" name="lastCritique" />
             </label>
             <input type="submit" value="Enter" />
           </form>
-        </div>
+        </div> */}
+        <Gemini></Gemini>
       </div>
       <div className={toggle === 3 ? "show-content" : "content"}>
         <h2>

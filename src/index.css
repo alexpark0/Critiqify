@@ -103,8 +103,8 @@ button:focus-visible {
 }
 
 .live-player {
-  height: 250px;
-  width: 500px;
+  height: 400px;
+  width: 800px;
   border: 10px solid #ba9c76;
   margin-bottom: 30px;
 }

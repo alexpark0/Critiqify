@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.11.3",
     "@stream-io/video-react-sdk": "^0.5.3",
     "draft-js": "^0.11.7",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.10.2",
     "react-dom": "^18.2.0",
     "react-quill": "^2.0.0"
   },
