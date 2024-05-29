@@ -45,16 +45,11 @@ const App = () => {
         <h1>HOW TO USE CRITIQIFY</h1>
         <h2>
           Simply click the button above to go to the recording page.
-          <br></br>Once you record your videos, use the text box to add
-          self-critiques.
+          <br></br>Choose to record with video and audio, or audio only. 
+          Then click "Get Camera" or "Get Microphone" to allow permissions, and start recording whenever you're ready. 
+          Ask AI for tips whenever you like. After recording a video, use the text box to critique yourself.
           <br></br>Have fun!
         </h2>
-        <img
-          src="https://media.discordapp.net/attachments/799331016489042020/1224050139186991205/Screenshot_2024-03-31_at_1.37.57_PM.png?ex=661c1486&is=66099f86&hm=f9c8e74b3c2d70ac91c5bbf7d4b9ad6b8714dc24db13e011ba49cd8d4f1312e5&=&format=webp&quality=lossless&width=1100&height=578"
-          alt="example"
-          width="1024"
-          height="512"
-        ></img>
       </div>
       <div className={toggle === 2 ? "show-content" : "content"}>
         <h2>Record a Presentation!</h2>
@@ -70,17 +65,12 @@ const App = () => {
       <div className={toggle === 3 ? "show-content" : "content"}>
         <h2>Alex Park : park.ale@northeastern.edu</h2>
         <a href="https://www.linkedin.com/in/alex-park-/">
-          <img
-            src="https://media.discordapp.net/attachments/799331016489042020/1224047747909292042/Screenshot_2024-03-31_at_1.28.38_PM.png?ex=661c124c&is=66099d4c&hm=a344d127c93404ad46104cf360ad5768149819ee005ee2b2c27ad52748bdc922&=&format=webp&quality=lossless&width=854&height=1174"
-            alt="alepark"
-            width="128"
-            height="192"
-          ></img>
+          {/* <img src={ require('./assets/alex.jpg') } alt=''/>  */}
         </a>
         <h2>Aiden Rim : rim.a@northeastern.edu</h2>
         <a href="https://www.youtube.com/watch?v=DINnS09LZww">
           <img
-            src="https://media.discordapp.net/attachments/799331016489042020/1224047747510829166/Screenshot_2024-03-31_at_1.26.42_PM.png?ex=661c124c&is=66099d4c&hm=9ea8d2a22ea489829cd3dfdf0cb6b80d935dfcfec2f88be771ae7b8584e497bf&=&format=webp&quality=lossless&width=1076&height=1174"
+            src="https://attachments.office.net/owa/Alexander.Park%40revvity.com/service.svc/s/GetAttachmentThumbnail?id=AAMkAGQxZjBkMDYzLTBhYWEtNDI4ZS04M2Q2LTNhODA2NzExMWYwZABGAAAAAAD822%2BIcFQZSqz%2BqxSX9pn%2BBwC2Gwc7EmQOS6ogJ%2B4YmQtuAAAAAAEMAAC2Gwc7EmQOS6ogJ%2B4YmQtuAAAMpsTsAAABEgAQAEeGvEsE8npHlSypjU9UGus%3D&thumbnailType=2&token=eyJhbGciOiJSUzI1NiIsImtpZCI6IkU1RDJGMEY4REE5M0I2NzA5QzQzQTlFOEE2MTQzQzAzRDYyRjlBODAiLCJ0eXAiOiJKV1QiLCJ4NXQiOiI1ZEx3LU5xVHRuQ2NRNm5vcGhROEE5WXZtb0EifQ.eyJvcmlnaW4iOiJodHRwczovL291dGxvb2sub2ZmaWNlLmNvbSIsInVjIjoiNTk3YWEwN2IyYWQxNDk0ZmJhZTBmOTMyYjE5MjQ1YTIiLCJzaWduaW5fc3RhdGUiOlsiZHZjX21uZ2QiLCJkdmNfY21wIl0sInZlciI6IkV4Y2hhbmdlLkNhbGxiYWNrLlYxIiwiYXBwY3R4c2VuZGVyIjoiT3dhRG93bmxvYWRANjZhOTJkMGYtOGNhOC00MDNjLTg0ZTYtNTUwM2M1NjQzOTk0IiwiaXNzcmluZyI6IldXIiwiYXBwY3R4Ijoie1wibXNleGNocHJvdFwiOlwib3dhXCIsXCJwdWlkXCI6XCIxMTUzODAxMTI4OTExNDY0NzEwXCIsXCJzY29wZVwiOlwiT3dhRG93bmxvYWRcIixcIm9pZFwiOlwiYWYwYTY2OGItMDQzYS00OGNmLWJiNWEtMTJjN2QzZmIyYTUxXCIsXCJwcmltYXJ5c2lkXCI6XCJTLTEtNS0yMS00MDM3NDE0MzcwLTI2NzQ5MTEwMDgtMTMzNTIwMjA5MC0zMDkxMTg4NlwifSIsIm5iZiI6MTcxNjk5NjA2OSwiZXhwIjoxNzE2OTk2MzY5LCJpc3MiOiIwMDAwMDAwMi0wMDAwLTBmZjEtY2UwMC0wMDAwMDAwMDAwMDBANjZhOTJkMGYtOGNhOC00MDNjLTg0ZTYtNTUwM2M1NjQzOTk0IiwiYXVkIjoiMDAwMDAwMDItMDAwMC0wZmYxLWNlMDAtMDAwMDAwMDAwMDAwL2F0dGFjaG1lbnRzLm9mZmljZS5uZXRANjZhOTJkMGYtOGNhOC00MDNjLTg0ZTYtNTUwM2M1NjQzOTk0IiwiaGFwcCI6Im93YSJ9.ANYMDojhUwxRorCZwTXhuP0NWT8vpptzLmurY6MlD-_biJcQmW-qSjhFN4q5ocqaDDlEWp1uDBzI7t_S5cylOEF2lBUGm4eWxAaFoR6Aolg5P4G7Rvvz_9547fZACCGYgimmTXuMCfVjFZuAijoeuITWjWi9AfKFfvtUXRk2j2UlOrdCHf0DEjtS6yNMU2nnlTF7dYiSO5XVGh2xdvjfSqKwLNpJ3LrpzQ3_ptmtvJ2BCdm3loKP_zZ1vOLpxK8nT5mdKiPyd4_KGZmr75mdKBjuOsm59orfx6gRdSGzUdu4IuwUbfcoya80zbaBiHKyR4EAI9hZND69tqLnqrNcwQ&X-OWA-CANARY=X-OWA-CANARY_cookie_is_null_or_empty&owa=outlook.office.com&scriptVer=20240517003.15&clientId=409E1F7319B34CEE99DBEE9207721546&animation=true&persistenceId=652016d5-72ad-4d0e-b2b8-c8d8818f593c"
             alt="arim"
             width="128"
             height="140"
