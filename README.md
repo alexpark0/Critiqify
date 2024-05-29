@@ -1,3 +1,3 @@
 # Critiqify
 
-App to critique video presentations. test
+App to critique video presentations.
