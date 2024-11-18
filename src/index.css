@@ -115,40 +115,6 @@ button:focus-visible {
   border: 10px solid #bc9c82;
 }
 
-.alex-park-homescreen {
-  display: flex;
-  padding: 10px;
-  border-bottom: 1px solid;
-}
-
-.button-left {
-  margin-right: 410px;
-}
-
-.button-middle {
-  margin-right: 20px;
-  margin-left: auto;
-}
-
-.button-right {
-  margin-right: 0;
-}
-
-.button-left,
-.button-middle,
-.button-right {
-  border-radius: 100px;
-  border: 5px solid transparent;
-  padding: 0.4em 0.2em;
-  font-size: 1.5em;
-  font-weight: 350;
-  font-family: inherit;
-  background-color: #ae9773;
-  cursor: pointer;
-  transition: border-color 0.5s;
-  color: rgb(163, 253, 255);
-}
-
 .textbox {
   width: 200;
 }

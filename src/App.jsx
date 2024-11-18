@@ -3,18 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import RecordPage from "./pages/RecordPage";
 import CreditsPage from "./pages/CreditsPage";
+import Navbar from "./Navbar";
 
 const App = () => {
   return (
     <Router>
-      <div className="alex-park-homescreen">
-        {/* Navigation Buttons */}
-        <Link to="/" className="button-left">About</Link>
-        <h1>CRITIQIFY</h1>
-        <Link to="/record" className="button-middle">Record</Link>
-        <Link to="/credits" className="button-right">Credits</Link>
-      </div>
-
+      <Navbar></Navbar>
       {/* Routes for Different Pages */}
       <Routes>
         <Route path="/" element={<LandingPage />} />
