@@ -137,10 +137,16 @@ button:focus-visible {
 .button-left,
 .button-middle,
 .button-right {
-  padding: 0.1em 0.1em;
-  border-style: groove;
+  border-radius: 100px;
+  border: 5px solid transparent;
+  padding: 0.4em 0.2em;
+  font-size: 1.5em;
+  font-weight: 350;
+  font-family: inherit;
+  background-color: #ae9773;
+  cursor: pointer;
+  transition: border-color 0.5s;
   color: rgb(163, 253, 255);
-  font-weight: 400;
 }
 
 .textbox {
