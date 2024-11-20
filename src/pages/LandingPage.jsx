@@ -1,10 +1,15 @@
+import "./LandingPage.css";
+
 const LandingPage = () => {
   return (
     <>
-      <h2>
-        Critiqify is an app used to record and self-critique video
-        presentations.
-      </h2>
+    <div className="main-block">
+      <div>
+        <h1>AI-Powered Interview/Presentation Prep</h1>
+        <div>Record and critique video presentations.</div>
+      </div>
+      <img src="pngwing.com.png" alt="" width="750" height="500" />
+    </div>
       <h1>&nbsp;</h1>
       <h1>HOW TO USE CRITIQIFY</h1>
       <h2>
