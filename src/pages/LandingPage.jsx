@@ -1,14 +1,30 @@
 import "./LandingPage.css";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const LandingPage = () => {
+  
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+      const timeout = setTimeout(() => {
+          setIsVisible(true);
+      }, 100);
+      return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <>
     <div className="main-block">
-      <div>
-        <h1>AI-Powered Interview/Presentation Prep</h1>
-        <div>Record and critique video presentations.</div>
+      <div className={isVisible ? "fade-in" : ""}>
+        <h1>AI-Powered<br></br>Interview Prep</h1>
+        <div>Prepare for interviews with Critiqify.</div>
+        <br></br>
+        <Link to="/record" className="button">
+          Start Recording
+        </Link>
       </div>
-      <img src="pngwing.com.png" alt="" width="750" height="500" />
+      <img src="pngwing.com.png" alt="" width="600" height="500" />
     </div>
       <h1>&nbsp;</h1>
       <h1>HOW TO USE CRITIQIFY</h1>

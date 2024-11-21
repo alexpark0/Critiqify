@@ -5,3 +5,36 @@
     height: 75vh;
     gap: 20px; /* Optional: add some spacing between items */
 }
+
+@keyframes fadeInFromAbove {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeInFromAbove 3s ease-in-out forwards;
+}
+
+.button {
+    border-radius: 100px;
+    border: 5px solid transparent;
+    padding: 0.4em 0.2em;
+    font-size: 1.5em;
+    font-weight: 350;
+    font-family: inherit;
+    background-color: #ae9773;
+    cursor: pointer;
+    transition: border-color 0.5s;
+    color: rgb(163, 253, 255);
+  }
+  
+  .button:hover {
+    border-color: #18e9f0;
+  }
+  

@@ -16,7 +16,8 @@ h1 {
   margin: 0;
   font-family: "Lexend", sans-serif;
   font-optical-sizing: auto;
-  font-weight: 500;
+  font-weight: 300;
+  font-size: large;
   font-style: normal;
   flex-wrap: wrap;
 }
