@@ -2,8 +2,13 @@
     display: flex;
     justify-content: space-evenly; /* Space items evenly with equal spacing */
     align-items: center; /* Align items vertically in the center */
-    height: 75vh;
+    height: 100vh;
     gap: 20px; /* Optional: add some spacing between items */
+}
+
+.tutorial {
+    background-color: rgb(6, 49, 56);
+    height: 100vh;
 }
 
 @keyframes fadeInFromAbove {

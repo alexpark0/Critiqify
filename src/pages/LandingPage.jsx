@@ -27,7 +27,6 @@ const LandingPage = () => {
         <img src="pngwing.com.png" alt="" width="600" height="500" />
       </div>
       <div className="tutorial">
-        <h1>&nbsp;</h1>
         <h1>HOW TO USE CRITIQIFY</h1>
         <h2>
           Simply click the button above to go to the recording page.
