@@ -38,6 +38,7 @@ const LandingPage = () => {
           <br></br>
           Have fun!
         </h2>
+        <h2>NOTICE:<br></br>GEMINI AI CURRENTLY NOT WORKING. WILL BE BACK UP SOON.</h2>
       </div>
     </>
   );

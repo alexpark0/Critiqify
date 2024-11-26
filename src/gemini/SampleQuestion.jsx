@@ -1,21 +1,17 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import React, { useState } from "react";
 
-const genAI = new GoogleGenerativeAI("AIzaSyAu9Sf7S0wM_DtPgyBfUNN5AAZAytgodgo");
+const genAI = new GoogleGenerativeAI('${process.env.API_KEY}');
 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-const Gemini = () => {
-  const [search, setSearch] = useState("");
+const SampleQuestion = () => {
 
-  const handleChangeSearch = (e) => {
-    setSearch(e.target.value);
-  };
   const [aiResponse, setResponse] = useState("");
 
   // Generative AI Call to fetch dishes
 
   async function aiRun() {
-    const prompt = `respond in 1-5 sentences: ${search} `;
+    const prompt = `give me a sample interview question. `;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -31,13 +27,8 @@ const Gemini = () => {
   return (
     <div>
       <div>
-        <input
-          placeholder="Ask AI for tips!"
-          style={{ width: "350px" }}
-          onChange={(e) => handleChangeSearch(e)}
-        />
         <button style={{ marginLeft: "20px" }} onClick={() => handleClick()}>
-          Enter
+          Generate Interview Question
         </button>
       </div>
       <div>
@@ -47,4 +38,4 @@ const Gemini = () => {
   );
 };
 
-export default Gemini;
+export default SampleQuestion;
