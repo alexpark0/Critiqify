@@ -32,7 +32,7 @@ const Gemini = () => {
     <div>
       <div>
         <input
-          placeholder="Ask AI for presentation tips!"
+          placeholder="Ask AI for tips!"
           style={{ width: "350px" }}
           onChange={(e) => handleChangeSearch(e)}
         />
