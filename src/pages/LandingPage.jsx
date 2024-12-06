@@ -1,6 +1,7 @@
 import "./LandingPage.css";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { IoIosArrowDown } from "react-icons/io";
 
 const LandingPage = () => {
   
@@ -13,18 +14,29 @@ const LandingPage = () => {
       return () => clearTimeout(timeout);
   }, []);
 
+  const style = {
+    backgroundImage: `url(interviewstock.jpg)`,
+    height: "100vh",
+    backgroundSize: "cover",
+    backgroundRepeat: "no-repeat"
+  }
+
   return (
     <>
+    <div style={style}>
       <div className="main-block">
         <div className={isVisible ? "fade-in" : ""}>
+          <h1 className="blank"> . </h1>
           <h1>AI-Powered<br></br>Interview Prep</h1>
-          <div>Prepare for interviews with Critiqify.</div>
+          <h2>Ace your interviews with Critiqify.</h2>
           <br></br>
           <Link to="/record" className="button">
             Start Recording
           </Link>
         </div>
-        <img src="pngwing.com.png" alt="" width="600" height="500" />
+        <div className="arrow">
+          <IoIosArrowDown></IoIosArrowDown>
+        </div>
       </div>
       <div className="tutorial">
         <h1>HOW TO USE CRITIQIFY</h1>
@@ -40,6 +52,7 @@ const LandingPage = () => {
         </h2>
         <h2>NOTICE:<br></br>GEMINI AI CURRENTLY NOT WORKING. WILL BE BACK UP SOON.</h2>
       </div>
+    </div>
     </>
   );
 };

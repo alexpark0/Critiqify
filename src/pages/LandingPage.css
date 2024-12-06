@@ -1,9 +1,7 @@
 .main-block {
-    display: flex;
     justify-content: space-evenly; /* Space items evenly with equal spacing */
-    align-items: center; /* Align items vertically in the center */
     height: 100vh;
-    gap: 20px; /* Optional: add some spacing between items */
+    gap: 200px; /* Optional: add some spacing between items */
 }
 
 .tutorial {
@@ -33,7 +31,7 @@
     font-size: 1.5em;
     font-weight: 450;
     font-family: inherit;
-    background-color: #ae9773;
+    background-color: #bea781;
     cursor: pointer;
     transition: border-color 0.5s;
     color: rgb(163, 253, 255);
@@ -43,3 +41,10 @@
     border-color: #18e9f0;
   }
   
+.blank {
+    color: transparent;
+}
+
+.arrow {
+    padding-top: 25vh;
+}
