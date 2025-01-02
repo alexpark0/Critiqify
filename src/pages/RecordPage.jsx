@@ -1,6 +1,6 @@
 import VideoRecorder from "../VideoRecorder";
 import AudioRecorder from "../AudioRecorder";
-import Gemini from "../gemini/GeminiTips";
+import GeminiTips from "../gemini/GeminiTips";
 import { useState } from "react";
 import SampleQuestion from "../gemini/SampleQuestion";
 
@@ -23,7 +23,7 @@ const RecordPage = () => {
       <div>
         {recordOption === "video" ? <VideoRecorder /> : <AudioRecorder />}
       </div>
-      <Gemini />
+      <GeminiTips />
     </>
   );
 };

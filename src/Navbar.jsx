@@ -10,9 +10,6 @@ const Navbar = () => {
           <h1 className="navbar-title">CRITIQIFY</h1>
         </Link>
       </div>
-      <div className="navbar-center">
-
-      </div>
       <div className="navbar-right">
         <Link to="/record" className="nav-link">
           Record
