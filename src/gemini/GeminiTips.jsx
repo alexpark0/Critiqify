@@ -30,7 +30,7 @@ const GeminiTips = () => {
 
   return (
     <div>
-      <div>
+      <div style={{ padding: "25px" }}>
         <input
           placeholder="Ask AI for tips!"
           style={{ width: "350px" }}
