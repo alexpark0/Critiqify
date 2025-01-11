@@ -1,21 +1,35 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import React, { useState } from "react";
 
-const response = await fetch('/.netlify/functions/fetchData');
-
-const genAI = new GoogleGenerativeAI(response);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
 const GeminiTips = () => {
   const [search, setSearch] = useState("");
-
-  const handleChangeSearch = (e) => {
-    setSearch(e.target.value);
-  };
   const [aiResponse, setResponse] = useState("");
+  const [genAI, setGenAI] = useState(null);
 
-  // Generative AI Call to fetch dishes
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
+  useEffect(() => {
+    async function fetchAPIKey() {
+      try {
+        const response = await fetch("/.netlify/functions/fetchData");
+        const data = await response.json();
+
+        if (data.error) {
+          console.error("Error fetching API Key:", data.error);
+          return;
+        }
+
+        // Initialize the Generative AI model with the received API key
+        const genAIInstance = new GoogleGenerativeAI(data.apiKey);
+        setGenAI(genAIInstance);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    }
+    fetchAPIKey();
+  }, []);
+
+  // Generative AI Call
   async function aiRun() {
     const prompt = `respond in 1-5 sentences: ${search} `;
     const result = await model.generateContent(prompt);
@@ -24,8 +38,11 @@ const GeminiTips = () => {
     setResponse(text);
   }
 
-  // button event trigger to consume gemini Api
+  const handleChangeSearch = (e) => {
+    setSearch(e.target.value);
+  };
 
+  // button to consume gemini Api
   const handleClick = () => {
     aiRun();
   };
