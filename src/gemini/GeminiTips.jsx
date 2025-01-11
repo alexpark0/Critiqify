@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import React, { useState } from "react";
 
-const genAI = new GoogleGenerativeAI('{process.env.API-KEY');
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 const GeminiTips = () => {
