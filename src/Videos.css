@@ -1,0 +1,34 @@
+.logs-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 25px;
+  }
+  
+  /* Custom styles for the card */
+  .log-card {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-block-end: 20px;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center; /* Center items horizontally */
+    justify-content: center; /* Center items vertically */
+    max-width: 32%;
+  }
+  
+  /* Custom styles for the video element */
+  .log-video {
+    display: flex;
+    width: 75%;
+    border-radius: 8px;
+    object-fit: fit; /* Ensure video fills container */
+  }
+  
+  /* Custom styles for the notes text */
+  .log-notes {
+    margin: 10px;
+    font-size: 20px;
+  }
