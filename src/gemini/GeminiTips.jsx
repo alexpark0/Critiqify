@@ -1,18 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const GeminiTips = () => {
   const [search, setSearch] = useState("");
   const [aiResponse, setResponse] = useState("");
   const [genAI, setGenAI] = useState(null);
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
   useEffect(() => {
     async function fetchAPIKey() {
       try {
         const response = await fetch("/.netlify/functions/fetchData");
-        const data = await response.json();
+        const data = await response.text();
 
         if (data.error) {
           console.error("Error fetching API Key:", data.error);
@@ -29,23 +27,26 @@ const GeminiTips = () => {
     fetchAPIKey();
   }, []);
 
-  // Generative AI Call
-  async function aiRun() {
-    const prompt = `respond in 1-5 sentences: ${search} `;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    setResponse(text);
-  }
-
   const handleChangeSearch = (e) => {
     setSearch(e.target.value);
   };
 
-  // button to consume gemini Api
-  const handleClick = () => {
-    aiRun();
-  };
+  async function aiRun() {
+    if (!genAI) {
+      console.error("GoogleGenerativeAI instance is not initialized.");
+      return;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const result = await model.generateContent({ contents: [{ parts: [{ text: search }] }] });
+      const response = await result.response;
+      const text = response.text();
+      setResponse(text);
+    } catch (error) {
+      console.error("Error generating content:", error);
+    }
+  }
 
   return (
     <div>
@@ -55,7 +56,7 @@ const GeminiTips = () => {
           style={{ width: "350px" }}
           onChange={(e) => handleChangeSearch(e)}
         />
-        <button style={{ marginLeft: "20px" }} onClick={() => handleClick()}>
+        <button style={{ marginLeft: "20px" }} onClick={aiRun}>
           Enter
         </button>
       </div>

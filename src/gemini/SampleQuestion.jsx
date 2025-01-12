@@ -1,11 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const SampleQuestion = () => {
   const [aiResponse, setResponse] = useState("");
   const [genAI, setGenAI] = useState(null);
-
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
   useEffect(() => {
     async function fetchAPIKey() {
@@ -28,9 +26,9 @@ const SampleQuestion = () => {
     fetchAPIKey();
   }, []);
 
-
   // Generative AI Call to fetch questions
   async function aiRun() {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     const prompt = `give me a sample interview question for a software engineering internship. respond in one sentence.`;
     const result = await model.generateContent(prompt);
     const response = await result.response;

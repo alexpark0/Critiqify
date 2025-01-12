@@ -1,8 +1,12 @@
 exports.handler = async function () {
     try {
         const API_KEY = process.env.API_SECRET_KEY;
+        console.log(API_KEY);
         if (!API_KEY) {
-            throw new Error("API key is missing in environment variables.");
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: "API key is missing in environment variables." }),
+            };
         }
 
         console.log("Using API Key:", API_KEY); // Debugging
@@ -18,14 +22,17 @@ exports.handler = async function () {
         });
 
         if (!response.ok) {
-            throw new Error(`API Request Failed: ${response.status} ${response.statusText}`);
+            return {
+                statusCode: response.status,
+                body: JSON.stringify({ error: `API Request Failed: ${response.statusText}` }),
+            };
         }
 
         const data = await response.json();
 
         return {
             statusCode: 200,
-            body: JSON.stringify(data),
+            body: JSON.stringify({ apiKey: API_KEY, data }), // Return both for debugging
         };
     } catch (error) {
         return {
