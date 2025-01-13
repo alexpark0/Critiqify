@@ -1,31 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const GeminiTips = () => {
   const [search, setSearch] = useState("");
   const [aiResponse, setResponse] = useState("");
-  const [genAI, setGenAI] = useState(null);
-
-  useEffect(() => {
-    async function fetchAPIKey() {
-      try {
-        const response = await fetch("/.netlify/functions/fetchData");
-        const data = await response.text();
-
-        if (data.error) {
-          console.error("Error fetching API Key:", data.error);
-          return;
-        }
-
-        // Initialize the Generative AI model with the received API key
-        const genAIInstance = new GoogleGenerativeAI(data.apiKey);
-        setGenAI(genAIInstance);
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    }
-    fetchAPIKey();
-  }, []);
+  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
 
   const handleChangeSearch = (e) => {
     setSearch(e.target.value);
