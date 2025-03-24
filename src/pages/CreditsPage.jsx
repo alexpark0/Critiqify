@@ -2,6 +2,8 @@ import "./CreditsPage.css";
 
 const CreditsPage = () => {
   return (
+    <div className="all-credits">
+    <h1>CREDITS</h1>
     <div className="credits">
       <div>
         <a href="https://www.linkedin.com/in/alex-park-/">
@@ -31,7 +33,7 @@ const CreditsPage = () => {
         <div>Colin Chu</div>
         <div>chu.col@northeastern.edu</div>
       </div>
-    </div>
+    </div></div>
   );
 };
 

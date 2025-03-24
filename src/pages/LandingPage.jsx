@@ -2,6 +2,7 @@ import "./LandingPage.css";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { IoIosArrowDown } from "react-icons/io";
+import CreditsPage from "./CreditsPage";
 
 const LandingPage = () => {
   
@@ -38,19 +39,7 @@ const LandingPage = () => {
           <IoIosArrowDown></IoIosArrowDown>
         </div>
       </div>
-      <div className="tutorial">
-        <h1>HOW TO USE CRITIQIFY</h1>
-        <h2>
-          Simply click the button above to go to the recording page.
-          <br></br>
-          Choose to record with video and audio, or audio only. Then click "Get
-          Camera" or "Get Microphone" to allow permissions, and start recording
-          whenever you're ready. Ask AI for tips whenever you like. After
-          recording a video, use the text box to critique yourself.
-          <br></br>
-          Have fun!
-        </h2>
-      </div>
+      <CreditsPage></CreditsPage>
     </div>
     </>
   );

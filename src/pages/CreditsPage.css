@@ -1,10 +1,16 @@
+.all-credits {
+  background-color: #292929;
+  height: 100vh;
+  padding: 32px;
+}
+
 .credits {
     display: flex;
-    flex-wrap: wrap; /* Allows wrapping if items overflow */
-    justify-content: space-evenly; /* Space items evenly with equal spacing */
-    align-items: center; /* Align items vertically in the center */
-    height: 75vh;
-    gap: 20px; /* Optional: add some spacing between items */
+    flex-wrap: wrap; /* item wrapping */
+    justify-content: space-evenly; /* space items evenly with equal spacing */
+    align-items: center; /* align items vertically in the center */
+    gap: 20px; /* spacing between items */
+    padding: 32px;
   }
   
   .credits > div {
