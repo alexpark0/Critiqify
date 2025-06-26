@@ -14,7 +14,7 @@ const CreditsPage = () => {
       </div>
       <div>
         <a href="https://www.linkedin.com/in/aidenrim/">
-          <img className="pfp" src="aidenrim.jpg" alt="arim" width="240" height="300" />
+          <img className="pfp" src="arim.jpg" alt="arim" width="240" height="300" />
         </a>
         <div>Aiden Rim</div>
         <div>rim.a@northeastern.edu</div>
