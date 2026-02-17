@@ -21,7 +21,6 @@ a {
 
 body {
   margin: 0;
-  place-items: start;
   min-width: 500px;
   min-height: 100vh;
 }
