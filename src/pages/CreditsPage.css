@@ -1,22 +1,56 @@
 .all-credits {
-  background-color: #292929;
-  height: 100vh;
-  padding: 32px;
+  background-color: var(--bg-deep);
+  padding: 48px 20px 72px;
+  scroll-margin-top: 16px;
+}
+
+.all-credits.is-page {
+  min-height: calc(100vh - var(--nav-h));
+  min-height: calc(100dvh - var(--nav-h));
+}
+
+.credits-intro {
+  margin-bottom: 8px;
 }
 
 .credits {
-    display: flex;
-    flex-wrap: wrap; /* item wrapping */
-    justify-content: space-evenly; /* space items evenly with equal spacing */
-    align-items: center; /* align items vertically in the center */
-    gap: 20px; /* spacing between items */
-    padding: 32px;
-  }
-  
-  .credits > div {
-    text-align: center; /* Center align text within each item */
-  }
-  
+  list-style: none;
+  margin: 0;
+  padding: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 240px));
+  justify-content: center;
+  gap: 28px 20px;
+}
+
+.credits > li {
+  min-width: 0;
+  text-align: center;
+}
+
+.credits a {
+  color: var(--text-soft);
+}
+
 .pfp {
-    border: 5px solid #555;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 4px solid #6d6254;
+  border-radius: 12px;
+  background: #1c1c1c;
+  display: block;
+}
+
+.person-name {
+  margin-top: 10px;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.person-email {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }

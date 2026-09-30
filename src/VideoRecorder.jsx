@@ -1,212 +1,310 @@
-import { useState, useRef } from "react";
-import { createClient } from '@supabase/supabase-js';
-import { Form } from 'react-bootstrap';
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { Link } from "react-router-dom";
+
+const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZ3hheWxneWxtdGFrd2J4enNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1NDQ4ODksImV4cCI6MjA1MjEyMDg4OX0.PfvbMIX6IByuf6kTWQgykjwHta6IdDmBioy-xJhTTJQ";
+const supabase = createClient(supabaseUrl, supabaseKey);
+const mimeType = "video/webm";
+
+function formatStamp(now = new Date()) {
+  const month = now.getMonth() + 1;
+  const date = now.getDate();
+  const year = now.getFullYear();
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const seconds = now.getSeconds().toString().padStart(2, "0");
+  return `${month}-${date}-${year}-${hours}.${minutes}.${seconds}`;
+}
+
+function stopStream(stream) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
 
 const VideoRecorder = () => {
+  const liveVideoRef = useRef(null);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const recordedUrlRef = useRef(null);
+
   const [permission, setPermission] = useState(false);
-  const mediaRecorder = useRef(null);
-  const liveVideoFeed = useRef(null);
   const [recordingStatus, setRecordingStatus] = useState("inactive");
-  const [stream, setStream] = useState(null);
-  const [videoChunks, setVideoChunks] = useState([]);
   const [recordedVideo, setRecordedVideo] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
   const [date, setDate] = useState(null);
-  const [value, setValue] = useState(),
-    onInput = ({target:{value}}) => setValue(value);
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState("");
+  const [saveState, setSaveState] = useState("idle");
+  const [saveError, setSaveError] = useState("");
+  const [isRequesting, setIsRequesting] = useState(false);
+  const requestingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZ3hheWxneWxtdGFrd2J4enNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1NDQ4ODksImV4cCI6MjA1MjEyMDg4OX0.PfvbMIX6IByuf6kTWQgykjwHta6IdDmBioy-xJhTTJQ";
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  useEffect(() => {
+    const video = liveVideoRef.current;
+    if (!video || !streamRef.current || recordedVideo) return;
+    video.srcObject = streamRef.current;
+    const playAttempt = video.play();
+    if (playAttempt) playAttempt.catch(() => {});
+  }, [permission, recordedVideo, recordingStatus]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      stopStream(streamRef.current);
+      if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
+    };
+  }, []);
+
+  const releasePreview = () => {
+    stopStream(streamRef.current);
+    streamRef.current = null;
+    if (liveVideoRef.current) liveVideoRef.current.srcObject = null;
+  };
 
   const getCameraPermission = async () => {
-    setRecordedVideo(null);
-    setVideoFile(null);
-    setDate(null);
-    if ("MediaRecorder" in window) {
-      try {
-        const videoConstraints = {
-          audio: false,
-          video: true,
-        };
-        const audioConstraints = { audio: true };
-        // create audio and video streams separately
-        const audioStream =
-          await navigator.mediaDevices.getUserMedia(audioConstraints);
-        const videoStream =
-          await navigator.mediaDevices.getUserMedia(videoConstraints);
-        setPermission(true);
-        //combine both audio and video streams
-        const combinedStream = new MediaStream([
-          ...videoStream.getVideoTracks(),
-          ...audioStream.getAudioTracks(),
-        ]);
-        setStream(combinedStream);
-        //set videostream to live feed player
-        liveVideoFeed.current.srcObject = videoStream;
-      } catch (err) {
-        alert(err.message);
+    if (requestingRef.current) return;
+    setError("");
+    setSaveState("idle");
+    setSaveError("");
+    if (!("MediaRecorder" in window) || !navigator.mediaDevices?.getUserMedia) {
+      setError(
+        "This browser doesn't support recording. Try Chrome, Edge, or Firefox.",
+      );
+      return;
+    }
+
+    requestingRef.current = true;
+    setIsRequesting(true);
+    setRecordingStatus("inactive");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      if (!mountedRef.current) {
+        stopStream(stream);
+        return;
       }
-    } else {
-      alert("The MediaRecorder API is not supported in your browser.");
+      releasePreview();
+      if (recordedUrlRef.current) {
+        URL.revokeObjectURL(recordedUrlRef.current);
+        recordedUrlRef.current = null;
+      }
+      setRecordedVideo(null);
+      setVideoFile(null);
+      setDate(null);
+      streamRef.current = stream;
+      setPermission(true);
+    } catch (err) {
+      setPermission(false);
+      const denied =
+        err?.name === "NotAllowedError" || err?.name === "SecurityError";
+      const missing = err?.name === "NotFoundError";
+      setError(
+        denied
+          ? "Camera and microphone access was blocked. Allow access in the browser and try again."
+          : missing
+            ? "No camera or microphone was found on this device."
+            : "Couldn't open the camera. Check that it isn't already in use.",
+      );
+    } finally {
+      requestingRef.current = false;
+      if (mountedRef.current) setIsRequesting(false);
     }
   };
 
-  const startRecording = async () => {
-    setRecordingStatus("recording");
-    const media = new MediaRecorder(stream, { mimeType });
-    mediaRecorder.current = media;
-    mediaRecorder.current.start();
-    let localVideoChunks = [];
-    mediaRecorder.current.ondataavailable = (event) => {
-      if (typeof event.data === "undefined") return;
-      if (event.data.size === 0) return;
-      localVideoChunks.push(event.data);
-    };
-    setVideoChunks(localVideoChunks);
+  const startRecording = () => {
+    if (!streamRef.current) {
+      setError("Turn the camera on before recording.");
+      return;
+    }
+    setError("");
+    chunksRef.current = [];
+    try {
+      const media = new MediaRecorder(streamRef.current, { mimeType });
+      recorderRef.current = media;
+      media.ondataavailable = (event) => {
+        if (!event.data || event.data.size === 0) return;
+        chunksRef.current.push(event.data);
+      };
+      media.onstop = () => {
+        const stamp = formatStamp();
+        const videoBlob = new Blob(chunksRef.current, { type: mimeType });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        const file = new File([videoBlob], `${stamp}.webm`, {
+          type: "video/webm",
+        });
+        if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
+        recordedUrlRef.current = videoUrl;
+        chunksRef.current = [];
+        releasePreview();
+        setRecordedVideo(videoUrl);
+        setVideoFile(file);
+        setDate(stamp);
+        setPermission(false);
+        setRecordingStatus("inactive");
+      };
+      media.start();
+      setRecordingStatus("recording");
+    } catch {
+      setRecordingStatus("inactive");
+      setError("Recording couldn't start in this browser.");
+    }
   };
 
   const stopRecording = () => {
-    setPermission(false);
-    setRecordingStatus("inactive");
-    mediaRecorder.current.stop();
-    mediaRecorder.current.onstop = () => {
-      const videoBlob = new Blob(videoChunks, { type: mimeType });
-      const videoUrl = URL.createObjectURL(videoBlob);
-      const file = new File([videoBlob], getDate() + '.webm', { type: 'video/webm' });
-      setRecordedVideo(videoUrl);
-      setVideoFile(file);
-      setVideoChunks([]);
-      setDate(getDate());
-    };
+    const media = recorderRef.current;
+    if (!media || media.state === "inactive") return;
+    media.stop();
   };
 
-  function getDate() {
-    const now = new Date();
-    const month = now.getMonth() + 1; 
-    const date = now.getDate();
-    const year = now.getFullYear();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-    return `${month}-${date}-${year}-${hours.toString().padStart(2, '0')}.${minutes.toString().padStart(2, '0')}.${seconds.toString().padStart(2, '0')}`;
-  }
-
-  // async function uploadVideo(file, notes) {
-  //   if (!file) {
-  //     alert("No file available for upload.");
-  //     return;
-  //   }
-  
-  //   console.log("Uploading:", file.name);
-  
-  //   const { data, error } = await supabase.storage
-  //     .from("videos")
-  //     .upload(`videos/${file.name}`, file, {
-  //       cacheControl: "3600",
-  //       upsert: false, // Set to true if you want to replace existing files
-  //     });
-  
-  //   if (error) {
-  //     console.error("Upload Error:", error.message);
-  //     alert("Error uploading link to Supabase: " + error.message);
-  //     return;
-  //   }
-  
-  //   const vidURL = `${supabaseUrl}/storage/v1/object/public/videos/videos/${file.name}`;
-  //   console.log("Video uploaded successfully:", vidURL);
-  
-  //   // Store video metadata in Supabase database
-  //   storeData(vidURL, notes);
-  // }
-  
-
-  async function uploadVideo(file, notes) {
-    console.log(file, notes)
-    const { data, error } = await supabase.storage
-      .from('videos').upload(date + '.webm', file);
-    if (error) {
-      console.log(error);
-      alert("Error uploading link to Supabase");
-    }
-    const vidURL = `${supabaseUrl}/storage/v1/object/public/videos/` + date + '.webm';
-    storeData(vidURL, notes);
-  }
-
-  async function storeData(url, notes) {
-    const { data, error } = await supabase.from('videos').insert({
-      date: date, link: url, notes: notes
+  async function storeData(url, noteText, stamp) {
+    const { error: insertError } = await supabase.from("videos").insert({
+      date: stamp,
+      link: url,
+      notes: noteText,
     });
-  
-    if (error) {
-      console.error('Error storing video metadata:', error.message);
-    }
-  };
+    return !insertError;
+  }
 
-  // async function storeData(url, notes) {
-  //   const { data, error } = await supabase
-  //     .from("videos") // Ensure this matches your actual table name
-  //     .insert([{ date: date, link: url, notes: notes }]);
-  
-  //   if (error) {
-  //     console.error("Error storing video metadata:", error.message);
-  //     alert("Error saving metadata: " + error.message);
-  //     return;
-  //   }
-  
-  //   console.log("Video metadata stored successfully:", data);
-  // }
-  
+  async function uploadVideo(file, noteText) {
+    if (!file || !date) {
+      setSaveState("error");
+      setSaveError("Record a video before saving.");
+      return;
+    }
+    setSaveState("saving");
+    setSaveError("");
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from("videos")
+        .upload(`${date}.webm`, file);
+      if (uploadError) {
+        setSaveState("error");
+        setSaveError(
+          "Couldn't upload this recording. The storage service may be unavailable.",
+        );
+        return;
+      }
+      const vidURL = `${supabaseUrl}/storage/v1/object/public/videos/${date}.webm`;
+      const stored = await storeData(vidURL, noteText ?? "", date);
+      if (!stored) {
+        setSaveState("error");
+        setSaveError(
+          "The video uploaded, but saving the notes failed. Try again.",
+        );
+        return;
+      }
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+      setSaveError(
+        "Couldn't reach the storage service. Check your connection and try again.",
+      );
+    }
+  }
 
   return (
     <div>
-      <h2>Video Recorder</h2>
-      <main>
-        <div className="video-controls">
-          {!permission ? (
-            <button onClick={getCameraPermission} type="button">
-              Get Camera
-            </button>
-          ) : null}
-          {permission && recordingStatus === "inactive" ? (
-            <button onClick={startRecording} type="button">
-              Start Recording
-            </button>
-          ) : null}
-          {recordingStatus === "recording" ? (
-            <button onClick={stopRecording} type="button">
-              Stop Recording
-            </button>
-          ) : null}
-        </div>
-      </main>
-
-      <div className="video-player">
-        {!recordedVideo ? (
-          <video ref={liveVideoFeed} autoPlay className="live-player"></video>
+      <h2 id="recorder-heading">Video Recorder</h2>
+      <div className="recorder-controls">
+        {!permission && recordingStatus !== "recording" ? (
+          <button
+            onClick={getCameraPermission}
+            type="button"
+            disabled={isRequesting}
+          >
+            {isRequesting ? "Opening camera…" : "Get Camera"}
+          </button>
         ) : null}
-        {recordedVideo ? (
-          <div className="recorded-player">
-            <video className="recorded" src={recordedVideo} controls></video>
-            <h2>
-              <Form>
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes:</Form.Label>
-                  <br></br>
-                  <Form.Control type ="text" placeholder="Enter notes here" 
-                  as="textarea" rows={3} cols={100} onChange={onInput}/>
-                </Form.Group>
-              </Form>
-            </h2>
-            <button className="button-save" onClick={()=>uploadVideo(videoFile, value)}>
-              Save
-            </button>
-          </div>
+        {permission && recordingStatus === "inactive" ? (
+          <button onClick={startRecording} type="button">
+            Start Recording
+          </button>
+        ) : null}
+        {recordingStatus === "recording" ? (
+          <button onClick={stopRecording} type="button" className="button-stop">
+            Stop Recording
+          </button>
         ) : null}
       </div>
-    </div>  
+      {recordingStatus === "recording" ? (
+        <p className="recording-status" role="status">
+          <span className="recording-dot" aria-hidden="true" />
+          Recording
+        </p>
+      ) : null}
+      {error ? (
+        <p className="status status-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="preview-frame">
+        {!recordedVideo ? (
+          <video
+            ref={liveVideoRef}
+            autoPlay
+            muted
+            playsInline
+            className="live-player"
+          />
+        ) : (
+          <video className="recorded" src={recordedVideo} controls />
+        )}
+        {!permission && !recordedVideo ? (
+          <p className="preview-hint">Camera preview will show here.</p>
+        ) : null}
+      </div>
+
+      {recordedVideo ? (
+        <div className="recorded-player">
+          <div className="field">
+            <label htmlFor="video-notes">Notes</label>
+            <textarea
+              id="video-notes"
+              rows={3}
+              placeholder="Enter notes here"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </div>
+          <div className="recorder-controls">
+            <button
+              className="button-save"
+              type="button"
+              onClick={() => uploadVideo(videoFile, notes)}
+              disabled={saveState === "saving"}
+            >
+              {saveState === "saving" ? "Saving…" : "Save"}
+            </button>
+          </div>
+          {saveState === "saving" ? (
+            <p className="status" role="status">
+              Uploading your recording…
+            </p>
+          ) : null}
+          {saveState === "saved" ? (
+            <p className="status status-ok" role="status">
+              Saved. Find it on the <Link to="/logs">Logs</Link> page.
+            </p>
+          ) : null}
+          {saveState === "error" ? (
+            <p className="status status-error" role="alert">
+              {saveError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 };
 
 export default VideoRecorder;
-const mimeType = "video/webm";

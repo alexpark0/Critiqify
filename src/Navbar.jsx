@@ -1,22 +1,27 @@
-import React from "react";
 import "./Navbar.css";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+
+const linkClass = ({ isActive }) =>
+  isActive ? "nav-link is-active" : "nav-link";
 
 const Navbar = () => {
   return (
-    <nav className="navbar">
+    <nav className="navbar" aria-label="Primary">
       <div className="navbar-left">
-        <Link to="/" className="navbar-title">
-          <h1 className="navbar-title">CRITIQIFY</h1>
-        </Link>
+        <NavLink to="/" end className="navbar-brand">
+          Critiqify
+        </NavLink>
       </div>
       <div className="navbar-right">
-        <Link to="/record" className="nav-link">
+        <NavLink to="/record" className={linkClass}>
           Record
-        </Link>
-        <Link to="/logs" className="nav-link">
+        </NavLink>
+        <NavLink to="/logs" className={linkClass}>
           Logs
-        </Link>
+        </NavLink>
+        <NavLink to="/credits" className={linkClass}>
+          Credits
+        </NavLink>
       </div>
     </nav>
   );
