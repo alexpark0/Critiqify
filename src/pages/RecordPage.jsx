@@ -1,27 +1,35 @@
+import { useRef, useState } from "react";
 import VideoRecorder from "../VideoRecorder";
-import GeminiTips from "../gemini/GeminiTips";
 import SampleQuestion from "../gemini/SampleQuestion";
+import VideoCritique from "../gemini/VideoCritique";
 import "./RecordPage.css";
 
 const RecordPage = () => {
+  const [question, setQuestion] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const playerRef = useRef(null);
+
   return (
     <div className="record-page">
       <h1>Record a Presentation</h1>
       <p className="record-intro">
-        Practice an interview question, record your answer, and ask for
-        feedback.
+        Practice an interview question, record your answer, and get a graded
+        critique of how you delivered it.
       </p>
       <section className="panel" aria-labelledby="question-heading">
         <h2 id="question-heading">Practice question</h2>
-        <SampleQuestion />
+        <SampleQuestion onQuestion={setQuestion} />
       </section>
-      <section className="panel" aria-labelledby="recorder-heading">
-        <VideoRecorder />
-      </section>
-      <section className="panel" aria-labelledby="tips-heading">
-        <h2 id="tips-heading">Ask AI for tips</h2>
-        <GeminiTips />
-      </section>
+      <div className="record-stage">
+        <section className="panel recorder-panel" aria-labelledby="recorder-heading">
+          <VideoRecorder ref={playerRef} onRecordingReady={setVideoFile} />
+        </section>
+        <VideoCritique
+          videoFile={videoFile}
+          question={question}
+          onSeek={(seconds) => playerRef.current?.seekTo(seconds)}
+        />
+      </div>
     </div>
   );
 };

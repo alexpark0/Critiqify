@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import { createClient } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
 const supabaseKey =
@@ -22,7 +24,7 @@ function stopStream(stream) {
   stream?.getTracks().forEach((track) => track.stop());
 }
 
-const VideoRecorder = () => {
+const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, ref) {
   const liveVideoRef = useRef(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -100,6 +102,7 @@ const VideoRecorder = () => {
       setRecordedVideo(null);
       setVideoFile(null);
       setDate(null);
+      onRecordingReady?.(null);
       streamRef.current = stream;
       setPermission(true);
     } catch (err) {
@@ -137,19 +140,25 @@ const VideoRecorder = () => {
       media.onstop = () => {
         const stamp = formatStamp();
         const videoBlob = new Blob(chunksRef.current, { type: mimeType });
+        chunksRef.current = [];
+        releasePreview();
+        setPermission(false);
+        setRecordingStatus("inactive");
+        if (videoBlob.size === 0) {
+          setError("The recording was empty. Try again.");
+          onRecordingReady?.(null);
+          return;
+        }
         const videoUrl = URL.createObjectURL(videoBlob);
         const file = new File([videoBlob], `${stamp}.webm`, {
           type: "video/webm",
         });
         if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
         recordedUrlRef.current = videoUrl;
-        chunksRef.current = [];
-        releasePreview();
         setRecordedVideo(videoUrl);
         setVideoFile(file);
         setDate(stamp);
-        setPermission(false);
-        setRecordingStatus("inactive");
+        onRecordingReady?.(file);
       };
       media.start();
       setRecordingStatus("recording");
@@ -247,8 +256,8 @@ const VideoRecorder = () => {
         </p>
       ) : null}
 
-      <div className="preview-frame">
-        {!recordedVideo ? (
+      {!recordedVideo ? (
+        <div className="preview-frame">
           <video
             ref={liveVideoRef}
             autoPlay
@@ -256,13 +265,13 @@ const VideoRecorder = () => {
             playsInline
             className="live-player"
           />
-        ) : (
-          <video className="recorded" src={recordedVideo} controls />
-        )}
-        {!permission && !recordedVideo ? (
-          <p className="preview-hint">Camera preview will show here.</p>
-        ) : null}
-      </div>
+          {!permission ? (
+            <p className="preview-hint">Camera preview will show here.</p>
+          ) : null}
+        </div>
+      ) : (
+        <RecordedPlayer ref={ref} src={recordedVideo} />
+      )}
 
       {recordedVideo ? (
         <div className="recorded-player">
@@ -305,6 +314,10 @@ const VideoRecorder = () => {
       ) : null}
     </div>
   );
-};
+});
 
 export default VideoRecorder;
+
+VideoRecorder.propTypes = {
+  onRecordingReady: PropTypes.func,
+};

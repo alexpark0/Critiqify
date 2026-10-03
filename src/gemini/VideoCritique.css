@@ -1,0 +1,199 @@
+button.timestamp-link {
+  display: inline;
+  min-height: 0;
+  margin: 0;
+  padding: 0 0.12em;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cyan);
+  font-size: inherit;
+  font-weight: 650;
+  line-height: inherit;
+  vertical-align: baseline;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.timestamp-link:hover {
+  background: rgba(163, 253, 255, 0.14);
+  color: #e7ffff;
+  border-color: transparent;
+}
+
+.critique-panel h2 {
+  text-align: left;
+}
+
+.critique-question {
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.critique-question span {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.critique-empty {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+}
+
+.critique-body p,
+.summary-block p,
+.category-card p {
+  color: var(--text-soft);
+}
+
+.summary-block {
+  margin-top: 14px;
+}
+
+.summary-block h3,
+.critique-chat h3,
+.category-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.02rem;
+  color: var(--gold);
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.category-card {
+  background: #2a2c2c;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px 14px;
+}
+
+.category-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.category-head h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.category-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.grade-badge {
+  display: inline-flex;
+  min-width: 2.1rem;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1c1916;
+  font-weight: 650;
+  padding: 0.1rem 0.5rem;
+}
+
+.score-value {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+}
+
+.tips-label {
+  margin: 10px 0 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tips {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text-soft);
+}
+
+.tips li + li {
+  margin-top: 4px;
+}
+
+.critique-chat {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.critique-chat .status {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+}
+
+.chat-log {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.chat-bubble {
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-bubble.is-user {
+  background: rgba(163, 253, 255, 0.12);
+}
+
+.chat-bubble.is-model {
+  background: #2a2c2c;
+  border: 1px solid var(--line);
+}
+
+.chat-role {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.critique-chat .inline-field {
+  justify-content: stretch;
+  align-items: end;
+}
+
+.critique-chat textarea {
+  min-height: 72px;
+}
+
+@media (min-width: 861px) {
+  .critique-panel {
+    max-height: calc(100vh - var(--nav-h) - 24px);
+    max-height: calc(100dvh - var(--nav-h) - 24px);
+    overflow: auto;
+    position: sticky;
+    top: calc(var(--nav-h) + 12px);
+  }
+}
