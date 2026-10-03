@@ -265,7 +265,25 @@ const RecordedPlayer = forwardRef(function RecordedPlayer({ src }, ref) {
           onPointerUp={() => {
             scrubbingRef.current = false;
           }}
-          onKeyDown={() => {
+          onKeyDown={(event) => {
+            const jump =
+              event.key === "ArrowRight" ? 5 : event.key === "ArrowLeft" ? -5 : 0;
+            if (jump) {
+              event.preventDefault();
+              scrubbingRef.current = true;
+              applySeek(shownCurrent + jump, false);
+              return;
+            }
+            if (event.key === "Home") {
+              event.preventDefault();
+              applySeek(0, false);
+              return;
+            }
+            if (event.key === "End") {
+              event.preventDefault();
+              applySeek(safeDuration, false);
+              return;
+            }
             scrubbingRef.current = true;
           }}
           onKeyUp={() => {
