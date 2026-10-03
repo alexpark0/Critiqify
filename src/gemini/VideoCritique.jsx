@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { startCritiqueSession } from "./critiqueClient.js";
 import { toCritiqueError } from "./critiqueFormat.js";
 import GeminiAlert from "./GeminiAlert.jsx";
+import TimestampText from "../playback/TimestampText.jsx";
 import "./VideoCritique.css";
 
 const PHASE_COPY = {
@@ -15,7 +16,7 @@ function nextMessageId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-const VideoCritique = ({ videoFile, question }) => {
+const VideoCritique = ({ videoFile, question, onSeek }) => {
   const chatFieldId = useId();
   const sessionRef = useRef(null);
   const generationRef = useRef(0);
@@ -166,12 +167,16 @@ const VideoCritique = ({ videoFile, question }) => {
         <div className="critique-body">
           <div className="summary-block">
             <h3>Overall</h3>
-            <p>{critique.summary}</p>
+            <p>
+              <TimestampText text={critique.summary} onSeek={onSeek} />
+            </p>
           </div>
           {critique.addressedQuestion ? (
             <div className="summary-block">
               <h3>Did you answer it?</h3>
-              <p>{critique.addressedQuestion}</p>
+              <p>
+                <TimestampText text={critique.addressedQuestion} onSeek={onSeek} />
+              </p>
             </div>
           ) : null}
           <div className="category-list">
@@ -184,11 +189,15 @@ const VideoCritique = ({ videoFile, question }) => {
                     <span className="score-value">{category.score}/10</span>
                   </p>
                 </div>
-                <p>{category.explanation}</p>
+                <p>
+                  <TimestampText text={category.explanation} onSeek={onSeek} />
+                </p>
                 <p className="tips-label">Try this</p>
                 <ul className="tips">
                   {category.tips.map((tip, index) => (
-                    <li key={`${category.name}-${index}`}>{tip}</li>
+                    <li key={`${category.name}-${index}`}>
+                      <TimestampText text={tip} onSeek={onSeek} />
+                    </li>
                   ))}
                 </ul>
               </article>
@@ -221,7 +230,9 @@ const VideoCritique = ({ videoFile, question }) => {
                 <span className="chat-role">
                   {message.role === "user" ? "You" : "Gemini"}
                 </span>
-                <p>{message.text}</p>
+                <p>
+                  <TimestampText text={message.text} onSeek={onSeek} />
+                </p>
               </li>
             ))}
             {chatStatus === "sending" ? (
@@ -279,4 +290,5 @@ export default VideoCritique;
 VideoCritique.propTypes = {
   videoFile: PropTypes.object,
   question: PropTypes.string,
+  onSeek: PropTypes.func,
 };

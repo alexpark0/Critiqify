@@ -39,7 +39,13 @@ body {
 
 #root {
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: clip;
   text-align: center;
+}
+
+main {
+  min-width: 0;
 }
 
 h1,

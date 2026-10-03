@@ -1,6 +1,24 @@
-.critique-panel {
+button.timestamp-link {
+  display: inline;
+  min-height: 0;
   margin: 0;
-  text-align: left;
+  padding: 0 0.12em;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cyan);
+  font-size: inherit;
+  font-weight: 650;
+  line-height: inherit;
+  vertical-align: baseline;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.timestamp-link:hover {
+  background: rgba(163, 253, 255, 0.14);
+  color: #e7ffff;
+  border-color: transparent;
 }
 
 .critique-panel h2 {

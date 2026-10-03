@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createClient } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
 const supabaseKey =
@@ -23,7 +24,7 @@ function stopStream(stream) {
   stream?.getTracks().forEach((track) => track.stop());
 }
 
-const VideoRecorder = ({ onRecordingReady }) => {
+const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, ref) {
   const liveVideoRef = useRef(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -255,8 +256,8 @@ const VideoRecorder = ({ onRecordingReady }) => {
         </p>
       ) : null}
 
-      <div className="preview-frame">
-        {!recordedVideo ? (
+      {!recordedVideo ? (
+        <div className="preview-frame">
           <video
             ref={liveVideoRef}
             autoPlay
@@ -264,13 +265,13 @@ const VideoRecorder = ({ onRecordingReady }) => {
             playsInline
             className="live-player"
           />
-        ) : (
-          <video className="recorded" src={recordedVideo} controls />
-        )}
-        {!permission && !recordedVideo ? (
-          <p className="preview-hint">Camera preview will show here.</p>
-        ) : null}
-      </div>
+          {!permission ? (
+            <p className="preview-hint">Camera preview will show here.</p>
+          ) : null}
+        </div>
+      ) : (
+        <RecordedPlayer ref={ref} src={recordedVideo} />
+      )}
 
       {recordedVideo ? (
         <div className="recorded-player">
@@ -313,7 +314,7 @@ const VideoRecorder = ({ onRecordingReady }) => {
       ) : null}
     </div>
   );
-};
+});
 
 export default VideoRecorder;
 

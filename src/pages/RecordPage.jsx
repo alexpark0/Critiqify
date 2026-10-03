@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import VideoRecorder from "../VideoRecorder";
 import SampleQuestion from "../gemini/SampleQuestion";
 import VideoCritique from "../gemini/VideoCritique";
@@ -7,6 +7,7 @@ import "./RecordPage.css";
 const RecordPage = () => {
   const [question, setQuestion] = useState("");
   const [videoFile, setVideoFile] = useState(null);
+  const playerRef = useRef(null);
 
   return (
     <div className="record-page">
@@ -21,9 +22,13 @@ const RecordPage = () => {
       </section>
       <div className="record-stage">
         <section className="panel recorder-panel" aria-labelledby="recorder-heading">
-          <VideoRecorder onRecordingReady={setVideoFile} />
+          <VideoRecorder ref={playerRef} onRecordingReady={setVideoFile} />
         </section>
-        <VideoCritique videoFile={videoFile} question={question} />
+        <VideoCritique
+          videoFile={videoFile}
+          question={question}
+          onSeek={(seconds) => playerRef.current?.seekTo(seconds)}
+        />
       </div>
     </div>
   );
