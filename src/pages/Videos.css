@@ -1,34 +1,60 @@
+.logs-page {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 64px;
+}
+
+.logs-intro {
+  margin-bottom: 8px;
+}
+
 .logs-container {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 25px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 12px 0 0;
+}
+
+.log-card {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: min(100%, 360px);
+  max-width: 420px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 16px 16px 20px;
+}
+
+.log-card h2 {
+  font-size: 1.05rem;
+}
+
+.log-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  background: #111;
+  object-fit: contain;
+}
+
+.log-notes {
+  margin: 12px 0 0;
+  font-size: 1rem;
+  text-align: left;
+  width: 100%;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  .logs-page {
+    width: min(100% - 20px, 1100px);
   }
-  
-  /* Custom styles for the card */
-  .log-card {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-block-end: 20px;
-    flex-direction: column; /* Stack elements vertically */
-    align-items: center; /* Center items horizontally */
-    justify-content: center; /* Center items vertically */
-    max-width: 32%;
-  }
-  
-  /* Custom styles for the video element */
-  .log-video {
-    display: flex;
-    width: 75%;
-    border-radius: 8px;
-    object-fit: fit; /* Ensure video fills container */
-  }
-  
-  /* Custom styles for the notes text */
-  .log-notes {
-    margin: 10px;
-    font-size: 20px;
-  }
+}

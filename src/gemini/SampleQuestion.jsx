@@ -1,35 +1,52 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import React, { useState } from "react";
+import { useState } from "react";
 
 const SampleQuestion = () => {
   const [aiResponse, setResponse] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
   const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
 
-  // Generative AI Call to fetch questions
   async function aiRun() {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const prompt = `give me a sample interview question for a software engineering internship. respond in one sentence.`;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    setResponse(text);
+    setStatus("loading");
+    setError("");
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const prompt = `give me a sample interview question for a software engineering internship. respond in one sentence.`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      setResponse(text);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+      setResponse("");
+      setError(
+        "Couldn't generate a question. The AI service may be unavailable.",
+      );
+    }
   }
-
-  // button to consume gemini Api
-  const handleClick = () => {
-    aiRun();
-  };
 
   return (
     <div>
-      <div>
-        <button style={{ marginLeft: "20px" }} onClick={() => handleClick()}>
-          Generate Interview Question
-        </button>
-      </div>
-      <div>
-        <p>{aiResponse}</p>
-      </div>
+      <button type="button" onClick={aiRun} disabled={status === "loading"}>
+        {status === "loading" ? "Generating…" : "Generate Interview Question"}
+      </button>
+      {status === "loading" ? (
+        <p className="status" role="status">
+          Asking for a practice question…
+        </p>
+      ) : null}
+      {error ? (
+        <p className="status status-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {aiResponse ? (
+        <p className="ai-response" aria-live="polite">
+          {aiResponse}
+        </p>
+      ) : null}
     </div>
   );
 };
