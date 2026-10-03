@@ -1,7 +1,18 @@
 .record-page {
-  width: min(960px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 64px;
+}
+
+.record-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.record-stage .panel {
+  margin: 0;
 }
 
 .record-intro {
@@ -79,9 +90,15 @@
   }
 }
 
+@media (max-width: 860px) {
+  .record-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .record-page {
-    width: min(100% - 20px, 960px);
+    width: min(100% - 20px, 1180px);
     padding-top: 20px;
   }
 
