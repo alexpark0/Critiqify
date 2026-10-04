@@ -1,5 +1,12 @@
-/** Raw bytes that still fit inline after base64 expands them under Gemini's 20MB request limit. */
-export const INLINE_VIDEO_MAX_BYTES = 14 * 1024 * 1024;
+/**
+ * Raw bytes that still fit inline after base64 expands them under Gemini's
+ * 20MB request limit. 10 MiB becomes about 14MB of base64, leaving room for
+ * the prompt and the JSON schema. Larger clips use the Files API.
+ */
+export const INLINE_VIDEO_MAX_BYTES = 10 * 1024 * 1024;
+
+/** How long to wait for a Files API upload to leave PROCESSING. */
+export const FILE_PROCESS_TIMEOUT_MS = 5 * 60 * 1000;
 
 /** Free-tier Gemini Files API limit per video. */
 export const FILE_API_MAX_BYTES = 2 * 1024 * 1024 * 1024;
@@ -53,6 +60,14 @@ export function modelMessage() {
   return "Gemini couldn't finish this critique. The model may be busy, or the response couldn't be read. Try again.";
 }
 
+export function stillProcessingMessage() {
+  return "This recording is still processing. It can take a few minutes. Try again, or record a shorter clip.";
+}
+
+export function fileFailedMessage() {
+  return "Gemini couldn't process this recording. Try a shorter clip.";
+}
+
 export function titleForKind(kind) {
   switch (kind) {
     case "missing_key":
@@ -61,6 +76,8 @@ export function titleForKind(kind) {
       return "Gemini rejected the API key";
     case "upload":
       return "Upload failed";
+    case "processing":
+      return "Video still processing";
     case "model":
       return "Gemini couldn't respond";
     default:
@@ -76,12 +93,56 @@ export function deliveryMode(byteLength) {
 }
 
 export function normalizeFileState(state) {
-  if (state == null || state === "") return "ACTIVE";
-  if (typeof state === "string") return state.toUpperCase();
-  if (typeof state === "object" && typeof state.name === "string") {
-    return state.name.toUpperCase();
+  let normalized = "";
+  if (typeof state === "string") normalized = state.toUpperCase();
+  else if (state && typeof state === "object" && typeof state.name === "string") {
+    normalized = state.name.toUpperCase();
+  } else if (state != null && state !== "") {
+    normalized = String(state).toUpperCase();
   }
-  return String(state).toUpperCase();
+  if (!normalized || normalized === "STATE_UNSPECIFIED") return "PENDING";
+  return normalized;
+}
+
+export function unwrapGeminiFile(value) {
+  if (
+    value &&
+    typeof value === "object" &&
+    value.file &&
+    typeof value.file === "object" &&
+    (value.file.name || value.file.uri || value.file.state)
+  ) {
+    return value.file;
+  }
+  return value;
+}
+
+export function nextPollDelayMs(previous) {
+  if (!previous || previous < 1000) return 1000;
+  return Math.min(previous * 2, 8000);
+}
+
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+export function geminiHttpStatus(error) {
+  const status = Number(error?.status || error?.statusCode || 0);
+  return Number.isFinite(status) ? status : 0;
+}
+
+export function isRetryableGeminiError(error) {
+  if (!error || error?.name === "AbortError" || error instanceof CritiqueError) return false;
+  if (RETRYABLE_STATUSES.has(geminiHttpStatus(error))) return true;
+  const message = extractMessage(error).toLowerCase();
+  return /resource_exhausted|unavailable|overloaded|rate limit|too many requests|internal error/.test(
+    message,
+  );
+}
+
+export function isFileNotReadyError(error) {
+  const message = extractMessage(error).toLowerCase();
+  return /not in an active state|still processing|file .{0,80}processing|not ready|failed_precondition/.test(
+    message,
+  );
 }
 
 export function buildCritiquePrompt(question) {

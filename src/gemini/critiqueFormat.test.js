@@ -8,14 +8,18 @@ import {
   buildCritiquePrompt,
   critiqueResponseSchema,
   deliveryMode,
+  isFileNotReadyError,
+  isRetryableGeminiError,
   missingKeyMessage,
   mockChatReply,
   mockCritique,
+  nextPollDelayMs,
   normalizeFileState,
   parseCritique,
   rejectedKeyMessage,
   titleForKind,
   toCritiqueError,
+  unwrapGeminiFile,
 } from "./critiqueFormat.js";
 
 test("deliveryMode uses inline data for small clips and the Files API after that", () => {
@@ -27,10 +31,40 @@ test("deliveryMode uses inline data for small clips and the Files API after that
   assert.equal(deliveryMode(Number.NaN), "too-large");
 });
 
-test("normalizeFileState treats a missing state as ready", () => {
-  assert.equal(normalizeFileState(undefined), "ACTIVE");
+test("normalizeFileState does not treat a missing state as ready", () => {
+  assert.equal(normalizeFileState(undefined), "PENDING");
+  assert.equal(normalizeFileState(""), "PENDING");
+  assert.equal(normalizeFileState("STATE_UNSPECIFIED"), "PENDING");
   assert.equal(normalizeFileState("processing"), "PROCESSING");
+  assert.equal(normalizeFileState("ACTIVE"), "ACTIVE");
   assert.equal(normalizeFileState({ name: "FAILED" }), "FAILED");
+});
+
+test("unwrapGeminiFile reads a nested upload payload", () => {
+  const file = { name: "files/abc", state: "PROCESSING", uri: "https://example/files/abc" };
+  assert.equal(unwrapGeminiFile({ file }), file);
+  assert.equal(unwrapGeminiFile(file), file);
+});
+
+test("poll delay backs off and then stays at eight seconds", () => {
+  assert.equal(nextPollDelayMs(0), 1000);
+  assert.equal(nextPollDelayMs(1000), 2000);
+  assert.equal(nextPollDelayMs(4000), 8000);
+  assert.equal(nextPollDelayMs(8000), 8000);
+});
+
+test("retryable Gemini errors are 429 and 5xx, not a normal 400", () => {
+  const busy = Object.assign(new Error("unavailable"), { status: 503 });
+  const limited = Object.assign(new Error("slow down"), { status: 429 });
+  const badRequest = Object.assign(new Error("invalid json"), { status: 400 });
+  assert.equal(isRetryableGeminiError(busy), true);
+  assert.equal(isRetryableGeminiError(limited), true);
+  assert.equal(isRetryableGeminiError(badRequest), false);
+  assert.equal(
+    isFileNotReadyError(new Error("File is not in an ACTIVE state and still processing")),
+    true,
+  );
+  assert.equal(isFileNotReadyError(badRequest), false);
 });
 
 test("buildCritiquePrompt includes the sample question when one is shown", () => {

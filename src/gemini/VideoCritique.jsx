@@ -9,6 +9,7 @@ import "./VideoCritique.css";
 const PHASE_COPY = {
   prepare: "Preparing your recording…",
   upload: "Uploading this recording to Gemini…",
+  process: "Processing your video…",
   grade: "Grading cadence, eye contact, filler words, and intonation…",
 };
 

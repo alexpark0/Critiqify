@@ -1,23 +1,29 @@
 import { createPartFromUri } from "@google/genai";
 import {
   CritiqueError,
+  FILE_PROCESS_TIMEOUT_MS,
   buildCritiquePrompt,
   critiqueResponseSchema,
   deliveryMode,
+  fileFailedMessage,
+  isFileNotReadyError,
+  isRetryableGeminiError,
   mockChatReply,
   mockCritique,
   modelMessage,
+  nextPollDelayMs,
   normalizeFileState,
   parseCritique,
+  stillProcessingMessage,
   tooLargeMessage,
   toCritiqueError,
+  unwrapGeminiFile,
   uploadMessage,
 } from "./critiqueFormat.js";
 import { createGeminiClient } from "./geminiClient.js";
 import { GEMINI_MODEL, isMockGemini } from "./geminiEnv.js";
 
-const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 120000;
+const FILE_READY_ATTEMPTS = 3;
 
 const FOLLOW_UP_INSTRUCTION = [
   "You are Critiqify's interview coach in a follow-up conversation about one specific recording.",
@@ -83,10 +89,13 @@ async function videoPartFor(ai, videoFile, signal, onProgress) {
   if (mode === "inline") {
     const data = await blobToBase64(videoFile);
     return {
-      inlineData: {
-        mimeType,
-        data,
+      part: {
+        inlineData: {
+          mimeType,
+          data,
+        },
       },
+      file: null,
     };
   }
 
@@ -105,41 +114,72 @@ async function videoPartFor(ai, videoFile, signal, onProgress) {
     throw asUploadError(error, signal);
   }
 
-  const ready = await waitUntilActive(ai, uploaded, signal);
-  if (!ready?.uri) {
-    throw new CritiqueError("upload", uploadMessage());
-  }
-  return createPartFromUri(ready.uri, ready.mimeType || mimeType);
+  const ready = await pollFileUntilActive({
+    file: uploaded,
+    signal,
+    onProgress,
+    getFile: fileGetter(ai, signal),
+  });
+  return { part: partFromFile(ready, mimeType), file: ready };
 }
 
-async function waitUntilActive(ai, file, signal) {
-  let current = file;
-  const started = Date.now();
+function fileGetter(ai, signal) {
+  return (name) =>
+    ai.files.get({
+      name,
+      config: { abortSignal: signal },
+    });
+}
+
+function partFromFile(file, mimeType) {
+  return createPartFromUri(file.uri, file.mimeType || mimeType);
+}
+
+export async function pollFileUntilActive({
+  file,
+  signal,
+  onProgress,
+  getFile,
+  sleep = delay,
+  now = () => Date.now(),
+  timeoutMs = FILE_PROCESS_TIMEOUT_MS,
+}) {
+  let current = unwrapGeminiFile(file);
+  if (!current?.name) {
+    throw new CritiqueError("upload", uploadMessage());
+  }
+
+  const started = now();
+  let delayMs = 0;
   for (;;) {
     if (signal?.aborted) throw abortError();
-    const state = normalizeFileState(current?.state);
-    if (state === "ACTIVE") return current;
-    if (state === "FAILED") {
-      throw new CritiqueError(
-        "upload",
-        "Gemini couldn't process this recording. Try a shorter clip.",
-      );
+    if (now() - started > timeoutMs) {
+      throw new CritiqueError("processing", stillProcessingMessage());
     }
-    if (Date.now() - started > POLL_TIMEOUT_MS) {
-      throw new CritiqueError(
-        "upload",
-        "This recording is still processing. Try again in a moment or record a shorter clip.",
-      );
+    if (delayMs > 0) await sleep(delayMs, signal);
+    if (signal?.aborted) throw abortError();
+    if (now() - started > timeoutMs) {
+      throw new CritiqueError("processing", stillProcessingMessage());
     }
-    await delay(POLL_INTERVAL_MS, signal);
+
     try {
-      current = await ai.files.get({
-        name: current.name,
-        config: { abortSignal: signal },
-      });
+      current = unwrapGeminiFile(await getFile(current.name));
     } catch (error) {
-      throw asUploadError(error, signal);
+      if (signal?.aborted || error?.name === "AbortError") throw abortError();
+      const classified = toCritiqueError(error);
+      if (classified.kind === "auth" || classified.kind === "missing_key") throw classified;
+      if (!isRetryableGeminiError(error)) throw new CritiqueError("upload", uploadMessage());
+      delayMs = nextPollDelayMs(delayMs);
+      continue;
     }
+
+    const state = normalizeFileState(current?.state);
+    if (state === "FAILED" || (state !== "ACTIVE" && current?.error?.message)) {
+      throw new CritiqueError("upload", fileFailedMessage());
+    }
+    if (state === "ACTIVE" && current?.uri) return current;
+    onProgress?.("process");
+    delayMs = nextPollDelayMs(delayMs);
   }
 }
 
@@ -166,7 +206,10 @@ async function mockSession({ videoFile, question, signal, onProgress }) {
   if (mode === "too-large") {
     throw new CritiqueError("upload", tooLargeMessage());
   }
-  if (mode === "files") onProgress?.("upload");
+  if (mode === "files") {
+    onProgress?.("upload");
+    onProgress?.("process");
+  }
   onProgress?.("grade");
   await delay(900, signal);
   const critique = mockCritique(question);
@@ -196,40 +239,29 @@ export async function startCritiqueSession({
 
   const ai = createGeminiClient("requesting a critique");
   const prompt = buildCritiquePrompt(question);
-  const videoPart = await videoPartFor(ai, videoFile, signal, onProgress);
+  const media = await videoPartFor(ai, videoFile, signal, onProgress);
   onProgress?.("grade");
 
-  let response;
-  try {
-    response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [videoPart, { text: prompt }],
-        },
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: critiqueResponseSchema,
-        temperature: 0.4,
-        maxOutputTokens: 4096,
-        abortSignal: signal,
-      },
-    });
-  } catch (error) {
-    if (signal?.aborted || error?.name === "AbortError") throw abortError();
-    throw toCritiqueError(error);
-  }
-
+  const response = await generateCritique(ai, media, prompt, signal, onProgress);
   const raw = responseText(response);
   if (!raw.trim()) throw new CritiqueError("model", modelMessage());
   const critique = parseCritique(raw);
 
+  if (media.file) {
+    const mimeType = videoFile.type || "video/webm";
+    media.file = await pollFileUntilActive({
+      file: media.file,
+      signal,
+      onProgress,
+      getFile: fileGetter(ai, signal),
+    });
+    media.part = partFromFile(media.file, mimeType);
+  }
+
   const chat = ai.chats.create({
     model: GEMINI_MODEL,
     history: [
-      { role: "user", parts: [videoPart, { text: prompt }] },
+      { role: "user", parts: [media.part, { text: prompt }] },
       { role: "model", parts: [{ text: raw }] },
     ],
     config: {
@@ -242,18 +274,75 @@ export async function startCritiqueSession({
     critique,
     ask: async (message) => {
       let reply;
-      try {
-        reply = await chat.sendMessage({
-          message,
-          config: { abortSignal: signal },
-        });
-      } catch (error) {
-        if (error?.name === "AbortError") throw abortError();
-        throw toCritiqueError(error);
+      for (let attempt = 1; attempt <= FILE_READY_ATTEMPTS; attempt += 1) {
+        try {
+          reply = await chat.sendMessage({
+            message,
+            config: { abortSignal: signal },
+          });
+          break;
+        } catch (error) {
+          if (signal?.aborted || error?.name === "AbortError") throw abortError();
+          if (isFileNotReadyError(error) && attempt < FILE_READY_ATTEMPTS) {
+            if (media.file) {
+              media.file = await pollFileUntilActive({
+                file: media.file,
+                signal,
+                getFile: fileGetter(ai, signal),
+              });
+            } else {
+              await delay(nextPollDelayMs(1000 * attempt), signal);
+            }
+            continue;
+          }
+          throw toCritiqueError(error);
+        }
       }
       const text = responseText(reply).trim();
       if (!text) throw new CritiqueError("model", modelMessage());
       return text;
     },
   };
+}
+
+async function generateCritique(ai, media, prompt, signal, onProgress) {
+  let lastError;
+  for (let attempt = 1; attempt <= FILE_READY_ATTEMPTS; attempt += 1) {
+    try {
+      return await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [
+          {
+            role: "user",
+            parts: [media.part, { text: prompt }],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: critiqueResponseSchema,
+          temperature: 0.4,
+          maxOutputTokens: 4096,
+          abortSignal: signal,
+        },
+      });
+    } catch (error) {
+      if (signal?.aborted || error?.name === "AbortError") throw abortError();
+      lastError = error;
+      if (!isFileNotReadyError(error) || attempt === FILE_READY_ATTEMPTS) break;
+      if (media.file) {
+        media.file = await pollFileUntilActive({
+          file: media.file,
+          signal,
+          onProgress,
+          getFile: fileGetter(ai, signal),
+        });
+        media.part = partFromFile(media.file, media.file.mimeType || "video/webm");
+      } else {
+        onProgress?.("process");
+        await delay(nextPollDelayMs(1000 * attempt), signal);
+      }
+      onProgress?.("grade");
+    }
+  }
+  throw toCritiqueError(lastError);
 }
