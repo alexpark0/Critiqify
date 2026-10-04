@@ -413,6 +413,7 @@ async function generateCritique(ai, media, prompt, signal, onProgress) {
         });
         media.part = partFromFile(media.file, normalizeVideoMimeType(media.file.mimeType));
       } else {
+        logCritique("info", "retrying critique", { attempt, waitMs: 1000 * attempt });
         onProgress?.("retry");
         await delay(1000 * attempt, signal);
       }
