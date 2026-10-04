@@ -39,7 +39,13 @@ body {
 
 #root {
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: clip;
   text-align: center;
+}
+
+main {
+  min-width: 0;
 }
 
 h1,
@@ -177,8 +183,29 @@ button:disabled {
   color: var(--text-soft);
 }
 
-.status-error {
+.status-error,
+.status-error p {
   color: var(--danger);
+}
+
+.status-error a {
+  color: var(--cyan);
+}
+
+.gemini-alert {
+  text-align: left;
+}
+
+.gemini-alert p {
+  margin: 0 0 8px;
+}
+
+.gemini-alert .error-title {
+  font-weight: 650;
+}
+
+.gemini-alert button {
+  margin-top: 6px;
 }
 
 .status-ok {

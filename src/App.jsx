@@ -9,14 +9,12 @@ import {
 } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import RecordPage from "./pages/RecordPage";
-import CreditsPage from "./pages/CreditsPage";
 import Navbar from "./Navbar";
 import Logs from "./pages/Videos";
 
 const titles = {
   "/": "Critiqify",
   "/record": "Record · Critiqify",
-  "/credits": "Credits · Critiqify",
   "/logs": "Logs · Critiqify",
 };
 
@@ -54,7 +52,6 @@ const App = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/record" element={<RecordPage />} />
-          <Route path="/credits" element={<CreditsPage />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
