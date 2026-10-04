@@ -13,9 +13,12 @@ import {
   missingKeyMessage,
   mockChatReply,
   mockCritique,
+  describeGenerateResult,
   nextPollDelayMs,
   normalizeFileState,
+  normalizeVideoMimeType,
   parseCritique,
+  readGenerateResult,
   rejectedKeyMessage,
   titleForKind,
   toCritiqueError,
@@ -155,6 +158,86 @@ test("toCritiqueError distinguishes a bad key, an abort, and a model failure", (
 
   const preserved = new CritiqueError("upload", "upload failed");
   assert.equal(toCritiqueError(preserved), preserved);
+});
+
+test("normalizeVideoMimeType drops codec parameters Gemini does not list", () => {
+  assert.equal(normalizeVideoMimeType("video/webm;codecs=vp9,opus"), "video/webm");
+  assert.equal(normalizeVideoMimeType("VIDEO/WEBM; codecs=vp8"), "video/webm");
+  assert.equal(normalizeVideoMimeType("video/mp4"), "video/mp4");
+  assert.equal(normalizeVideoMimeType(""), "video/webm");
+  assert.equal(normalizeVideoMimeType("application/octet-stream"), "video/webm");
+});
+
+test("readGenerateResult treats a cut-off reply as retryable and a safety block as final", () => {
+  const truncated = readGenerateResult({
+    candidates: [
+      {
+        finishReason: "MAX_TOKENS",
+        content: {
+          parts: [
+            { thought: true, text: "planning the grades" },
+            { text: '{"summary":' },
+          ],
+        },
+      },
+    ],
+    usageMetadata: { thoughtsTokenCount: 4000, candidatesTokenCount: 12 },
+  });
+  assert.equal(truncated.retryable, true);
+  assert.equal(truncated.blocked, false);
+  assert.equal(truncated.text, '{"summary":');
+  assert.equal(truncated.thoughtsTokenCount, 4000);
+  const described = describeGenerateResult(truncated, "The model did not return a complete critique.");
+  assert.match(described, /MAX_TOKENS/);
+  assert.match(described, /thoughtsTokenCount: 4000/);
+  assert.doesNotMatch(described, /planning the grades/);
+
+  const blocked = readGenerateResult({
+    promptFeedback: { blockReason: "SAFETY" },
+    candidates: [{ finishReason: "SAFETY", content: { parts: [] } }],
+  });
+  assert.equal(blocked.blocked, true);
+  assert.equal(blocked.retryable, false);
+
+  const empty = readGenerateResult({ candidates: [] });
+  assert.equal(empty.text, "");
+  assert.equal(empty.retryable, true);
+  assert.equal(empty.blocked, false);
+});
+
+test("parseCritique rounds a decimal score and accepts a grade suffix or a single tip", () => {
+  const source = mockCritique("Tell me about a bug.");
+  source.categories[0] = {
+    ...source.categories[0],
+    grade: "B+",
+    score: 7.5,
+    tips: "Pause after the problem.",
+  };
+  const parsed = parseCritique(source);
+  assert.equal(parsed.categories[0].grade, "B");
+  assert.equal(parsed.categories[0].score, 8);
+  assert.deepEqual(parsed.categories[0].tips, ["Pause after the problem."]);
+});
+
+test("parseCritique reads a JSON object surrounded by extra text", () => {
+  const critique = mockCritique("How would you debug a slow endpoint?");
+  const wrapped = `Here is the critique:\n${JSON.stringify(critique)}\nDone.`;
+  const parsed = parseCritique(wrapped);
+  assert.equal(parsed.categories.length, 4);
+  assert.match(parsed.addressedQuestion, /slow endpoint/);
+});
+
+test("parseCritique marks invalid JSON as retryable and keeps a snippet", () => {
+  assert.throws(
+    () => parseCritique("not-json {"),
+    (error) => {
+      assert.equal(error instanceof CritiqueError, true);
+      assert.equal(error.retryable, true);
+      assert.match(error.detail, /not valid JSON/);
+      assert.match(error.detail, /not-json/);
+      return true;
+    },
+  );
 });
 
 test("key messages point at AI Studio and VITE_API_KEY", () => {

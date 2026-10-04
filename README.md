@@ -17,6 +17,8 @@ Do not commit `.env` or a real key. `.env` is gitignored; `.env.example` only sh
 
 The app calls `gemini-3.8-flash`, a current Gemini model that accepts video with audio and can return JSON that matches a response schema. Clips up to 10 MiB are sent inline, which keeps the base64 request under Gemini's 20MB limit. Larger recordings are uploaded with the Gemini Files API. Video uploads stay in a processing state after the bytes are stored, so Critiqify polls `files.get` until the file is `ACTIVE` before grading or starting the follow-up chat. That wait can take a few minutes and is shown as "Processing your video…". The page reports an error only if processing fails or that wait runs longer than five minutes.
 
+`gemini-3.8-flash` thinks by default, and those thinking tokens count toward the output limit. Critique requests set thinking to low and allow a larger output so the JSON is less likely to be cut off. If a response is empty, truncated, or not valid JSON, Critiqify retries a few times on its own before showing Try again. While that happens the status line says "Gemini's first answer couldn't be read. Trying again…". If it still fails, open Error details on the page and the browser console. Every critique log line is prefixed with `[critiqify]` and includes the delivery mode (`inline` or `files`), the finish reason, and token counts.
+
 `VITE_MOCK_GEMINI=true` shows a sample critique and chat without calling Gemini, which is useful if you do not have a key yet. Leave it unset once `VITE_API_KEY` is a real key. If both are set, mock mode is used.
 
 ## Scripts

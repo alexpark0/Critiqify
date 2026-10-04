@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createClient } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import { normalizeVideoMimeType } from "./gemini/critiqueFormat.js";
 import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
@@ -150,7 +151,8 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
         settled = true;
         if (!mountedRef.current) return;
         const chunks = chunksRef.current.splice(0);
-        const videoBlob = new Blob(chunks, { type: mimeType });
+        const recordedType = normalizeVideoMimeType(media.mimeType || mimeType);
+        const videoBlob = new Blob(chunks, { type: recordedType });
         releasePreview();
         setPermission(false);
         setRecordingStatus("inactive");
@@ -163,7 +165,7 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
         const stamp = formatStamp();
         const videoUrl = URL.createObjectURL(videoBlob);
         const file = new File([videoBlob], `${stamp}.webm`, {
-          type: "video/webm",
+          type: recordedType,
         });
         if (!mountedRef.current) {
           URL.revokeObjectURL(videoUrl);

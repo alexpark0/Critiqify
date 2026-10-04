@@ -5,6 +5,7 @@ import {
   buildCritiquePrompt,
   critiqueResponseSchema,
   deliveryMode,
+  describeGenerateResult,
   fileFailedMessage,
   isFileNotReadyError,
   isRetryableGeminiError,
@@ -13,7 +14,9 @@ import {
   modelMessage,
   nextPollDelayMs,
   normalizeFileState,
+  normalizeVideoMimeType,
   parseCritique,
+  readGenerateResult,
   stillProcessingMessage,
   tooLargeMessage,
   toCritiqueError,
@@ -24,6 +27,8 @@ import { createGeminiClient } from "./geminiClient.js";
 import { GEMINI_MODEL, isMockGemini } from "./geminiEnv.js";
 
 const FILE_READY_ATTEMPTS = 3;
+const GRADE_ATTEMPTS = 3;
+const OUTPUT_TOKEN_LIMIT = 16384;
 
 const FOLLOW_UP_INSTRUCTION = [
   "You are Critiqify's interview coach in a follow-up conversation about one specific recording.",
@@ -58,23 +63,18 @@ function abortError() {
   return error;
 }
 
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result !== "string") {
-        reject(new CritiqueError("upload", uploadMessage()));
-        return;
-      }
-      const marker = "base64,";
-      const index = reader.result.indexOf(marker);
-      resolve(index >= 0 ? reader.result.slice(index + marker.length) : reader.result);
-    };
-    reader.onerror = () => {
-      reject(new CritiqueError("upload", uploadMessage()));
-    };
-    reader.readAsDataURL(blob);
-  });
+async function blobToBase64(blob) {
+  try {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+    }
+    return btoa(binary);
+  } catch {
+    throw new CritiqueError("upload", uploadMessage());
+  }
 }
 
 async function videoPartFor(ai, videoFile, signal, onProgress) {
@@ -85,7 +85,7 @@ async function videoPartFor(ai, videoFile, signal, onProgress) {
     throw new CritiqueError("upload", tooLargeMessage());
   }
 
-  const mimeType = videoFile.type || "video/webm";
+  const mimeType = normalizeVideoMimeType(videoFile.type);
   if (mode === "inline") {
     const data = await blobToBase64(videoFile);
     return {
@@ -239,16 +239,21 @@ export async function startCritiqueSession({
 
   const ai = createGeminiClient("requesting a critique");
   const prompt = buildCritiquePrompt(question);
+  const mimeType = normalizeVideoMimeType(videoFile.type);
+  logCritique("info", "starting critique", {
+    model: GEMINI_MODEL,
+    bytes: videoFile.size,
+    mime: mimeType,
+    mode: deliveryMode(videoFile.size),
+  });
   const media = await videoPartFor(ai, videoFile, signal, onProgress);
   onProgress?.("grade");
 
-  const response = await generateCritique(ai, media, prompt, signal, onProgress);
-  const raw = responseText(response);
-  if (!raw.trim()) throw new CritiqueError("model", modelMessage());
-  const critique = parseCritique(raw);
+  const graded = await generateCritique(ai, media, prompt, signal, onProgress);
+  const raw = graded.raw;
+  const critique = graded.critique;
 
   if (media.file) {
-    const mimeType = videoFile.type || "video/webm";
     media.file = await pollFileUntilActive({
       file: media.file,
       signal,
@@ -273,43 +278,74 @@ export async function startCritiqueSession({
   return {
     critique,
     ask: async (message) => {
-      let reply;
+      let lastError = null;
       for (let attempt = 1; attempt <= FILE_READY_ATTEMPTS; attempt += 1) {
         try {
-          reply = await chat.sendMessage({
+          const reply = await chat.sendMessage({
             message,
             config: { abortSignal: signal },
           });
-          break;
+          const text = responseText(reply).trim();
+          if (!text) {
+            throw new CritiqueError("model", modelMessage(), {
+              detail: "The follow-up response had no text.",
+              retryable: true,
+            });
+          }
+          return text;
         } catch (error) {
           if (signal?.aborted || error?.name === "AbortError") throw abortError();
-          if (isFileNotReadyError(error) && attempt < FILE_READY_ATTEMPTS) {
-            if (media.file) {
-              media.file = await pollFileUntilActive({
-                file: media.file,
-                signal,
-                getFile: fileGetter(ai, signal),
-              });
-            } else {
-              await delay(nextPollDelayMs(1000 * attempt), signal);
-            }
-            continue;
+          const parsed = toCritiqueError(error);
+          lastError = parsed;
+          logCritique("error", "follow-up failed", {
+            attempt,
+            kind: parsed.kind,
+            retryable: parsed.retryable,
+            detail: parsed.detail || error?.message,
+          });
+          const again =
+            attempt < FILE_READY_ATTEMPTS &&
+            (isFileNotReadyError(error) || parsed.retryable);
+          if (!again) break;
+          if (media.file && isFileNotReadyError(error)) {
+            media.file = await pollFileUntilActive({
+              file: media.file,
+              signal,
+              getFile: fileGetter(ai, signal),
+            });
+          } else {
+            await delay(1000 * attempt, signal);
           }
-          throw toCritiqueError(error);
         }
       }
-      const text = responseText(reply).trim();
-      if (!text) throw new CritiqueError("model", modelMessage());
-      return text;
+      throw lastError || new CritiqueError("model", modelMessage());
     },
   };
 }
 
+function logCritique(level, message, details) {
+  const write = level === "error" ? console.error : console.log;
+  write(`[critiqify] ${message}`, details);
+}
+
+function gradeConfig(signal) {
+  return {
+    responseMimeType: "application/json",
+    responseSchema: critiqueResponseSchema,
+    temperature: 0.4,
+    maxOutputTokens: OUTPUT_TOKEN_LIMIT,
+    // gemini-3.8-flash thinks at medium by default, and those tokens count
+    // against maxOutputTokens. Low keeps the JSON from being cut off.
+    thinkingConfig: { thinkingLevel: "LOW" },
+    abortSignal: signal,
+  };
+}
+
 async function generateCritique(ai, media, prompt, signal, onProgress) {
-  let lastError;
-  for (let attempt = 1; attempt <= FILE_READY_ATTEMPTS; attempt += 1) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= GRADE_ATTEMPTS; attempt += 1) {
     try {
-      return await ai.models.generateContent({
+      const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [
           {
@@ -317,32 +353,76 @@ async function generateCritique(ai, media, prompt, signal, onProgress) {
             parts: [media.part, { text: prompt }],
           },
         ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: critiqueResponseSchema,
-          temperature: 0.4,
-          maxOutputTokens: 4096,
-          abortSignal: signal,
-        },
+        config: gradeConfig(signal),
       });
+      const result = readGenerateResult(response);
+      logCritique("info", "generateContent finished", {
+        attempt,
+        finishReason: result.finishReason,
+        blockReason: result.blockReason,
+        thoughtsTokenCount: result.thoughtsTokenCount,
+        candidatesTokenCount: result.candidatesTokenCount,
+        textPreview: result.text.slice(0, 180),
+      });
+      if (result.blocked) {
+        throw new CritiqueError("model", "Gemini blocked this critique.", {
+          detail: describeGenerateResult(result, "The response was blocked."),
+          retryable: false,
+        });
+      }
+      if (!result.text.trim()) {
+        throw new CritiqueError("model", modelMessage(), {
+          detail: describeGenerateResult(result, "The model did not return a complete critique."),
+          retryable: true,
+        });
+      }
+      try {
+        const critique = parseCritique(result.text);
+        return { raw: result.text, critique };
+      } catch (error) {
+        const parsed = toCritiqueError(error);
+        throw new CritiqueError(parsed.kind, parsed.message, {
+          detail: [parsed.detail, describeGenerateResult(result)].filter(Boolean).join("\n"),
+          retryable: true,
+        });
+      }
     } catch (error) {
       if (signal?.aborted || error?.name === "AbortError") throw abortError();
-      lastError = error;
-      if (!isFileNotReadyError(error) || attempt === FILE_READY_ATTEMPTS) break;
-      if (media.file) {
+      const parsed = toCritiqueError(error);
+      lastError = parsed;
+      logCritique("error", "critique attempt failed", {
+        attempt,
+        kind: parsed.kind,
+        retryable: parsed.retryable,
+        message: parsed.message,
+        detail: parsed.detail,
+        status: error?.status,
+        finishReason: error?.finishReason,
+      });
+      const again =
+        attempt < GRADE_ATTEMPTS &&
+        (parsed.retryable || isFileNotReadyError(error) || isRetryableGeminiError(error));
+      if (!again) break;
+      if (isFileNotReadyError(error) && media.file) {
+        onProgress?.("process");
         media.file = await pollFileUntilActive({
           file: media.file,
           signal,
           onProgress,
           getFile: fileGetter(ai, signal),
         });
-        media.part = partFromFile(media.file, media.file.mimeType || "video/webm");
+        media.part = partFromFile(media.file, normalizeVideoMimeType(media.file.mimeType));
       } else {
-        onProgress?.("process");
-        await delay(nextPollDelayMs(1000 * attempt), signal);
+        onProgress?.("retry");
+        await delay(1000 * attempt, signal);
       }
       onProgress?.("grade");
     }
   }
-  throw toCritiqueError(lastError);
+  logCritique("error", "critique failed", {
+    kind: lastError?.kind,
+    message: lastError?.message,
+    detail: lastError?.detail,
+  });
+  throw lastError || new CritiqueError("model", modelMessage());
 }

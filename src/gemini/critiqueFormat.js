@@ -33,11 +33,24 @@ const CATEGORY_ALIASES = {
 const KEY_URL = "https://aistudio.google.com/apikey";
 
 export class CritiqueError extends Error {
-  constructor(kind, message) {
+  constructor(kind, message, extra) {
     super(message);
     this.name = "CritiqueError";
     this.kind = kind;
+    const options = typeof extra === "string" ? { detail: extra } : extra || {};
+    this.detail = typeof options.detail === "string" ? options.detail : "";
+    this.retryable = Boolean(options.retryable);
   }
+}
+
+/** Gemini lists video/webm, not the codec suffix MediaRecorder often appends. */
+export function normalizeVideoMimeType(type) {
+  const raw = typeof type === "string" ? type.trim().toLowerCase() : "";
+  const base = raw.split(";")[0].trim();
+  if (base === "video/webm" || base === "video/mp4" || base === "video/quicktime" || base === "video/mpeg") {
+    return base;
+  }
+  return "video/webm";
 }
 
 export function missingKeyMessage(action) {
@@ -228,30 +241,104 @@ function canonicalName(value) {
 
 function readScore(value) {
   const score = typeof value === "number" ? value : Number(cleanString(value));
-  if (!Number.isInteger(score) || score < 1 || score > 10) return null;
-  return score;
+  if (!Number.isFinite(score)) return null;
+  const rounded = Math.round(score);
+  if (rounded < 1 || rounded > 10) return null;
+  return rounded;
+}
+
+function readTips(value) {
+  if (Array.isArray(value)) return value.map(cleanString).filter(Boolean);
+  const single = cleanString(value);
+  return single ? [single] : [];
+}
+
+function parseJsonObject(text) {
+  const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch {
+        // Fall through to the shared parse error.
+      }
+    }
+  }
+  throw new CritiqueError("model", modelMessage(), {
+    detail: `Response was not valid JSON. It starts with: ${trimmed.slice(0, 240)}`,
+    retryable: true,
+  });
+}
+
+const BLOCKED_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"]);
+const INCOMPLETE_FINISH = new Set(["MAX_TOKENS", "MALFORMED_FUNCTION_CALL", "OTHER", "LANGUAGE"]);
+
+export function readGenerateResult(response) {
+  const candidate = response?.candidates?.[0];
+  const finishReason = String(candidate?.finishReason || "");
+  const blockReason = String(response?.promptFeedback?.blockReason || "");
+  const parts = candidate?.content?.parts;
+  let text = "";
+  if (Array.isArray(parts)) {
+    for (const part of parts) {
+      if (part?.thought === true) continue;
+      if (typeof part?.text === "string") text += part.text;
+    }
+  }
+  const usage = response?.usageMetadata || {};
+  const thoughtsTokenCount = Number.isFinite(usage.thoughtsTokenCount) ? usage.thoughtsTokenCount : null;
+  const candidatesTokenCount = Number.isFinite(usage.candidatesTokenCount)
+    ? usage.candidatesTokenCount
+    : null;
+  const blocked = Boolean(blockReason) || BLOCKED_FINISH.has(finishReason);
+  const incomplete = INCOMPLETE_FINISH.has(finishReason) || (!text.trim() && !blocked);
+  return {
+    text,
+    finishReason,
+    blockReason,
+    thoughtsTokenCount,
+    candidatesTokenCount,
+    blocked,
+    retryable: !blocked && (incomplete || !text.trim()),
+  };
+}
+
+export function describeGenerateResult(result, note = "") {
+  const lines = [];
+  if (note) lines.push(note);
+  if (result?.finishReason) lines.push(`finishReason: ${result.finishReason}`);
+  if (result?.blockReason) lines.push(`blockReason: ${result.blockReason}`);
+  if (result?.thoughtsTokenCount != null) lines.push(`thoughtsTokenCount: ${result.thoughtsTokenCount}`);
+  if (result?.candidatesTokenCount != null) {
+    lines.push(`candidatesTokenCount: ${result.candidatesTokenCount}`);
+  }
+  const snippet = typeof result?.text === "string" ? result.text.trim().slice(0, 500) : "";
+  if (snippet) lines.push(`model text: ${snippet}`);
+  return lines.join("\n");
 }
 
 export function parseCritique(payload) {
   let data = payload;
-  if (typeof payload === "string") {
-    const trimmed = payload
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
-    try {
-      data = JSON.parse(trimmed);
-    } catch {
-      throw new CritiqueError("model", modelMessage());
-    }
-  }
+  if (typeof payload === "string") data = parseJsonObject(payload);
 
   if (!data || typeof data !== "object") {
-    throw new CritiqueError("model", modelMessage());
+    throw new CritiqueError("model", modelMessage(), {
+      detail: "The model response was empty.",
+      retryable: true,
+    });
   }
 
   const summary = cleanString(data.summary);
-  if (!summary) throw new CritiqueError("model", modelMessage());
+  if (!summary) {
+    throw new CritiqueError("model", modelMessage(), {
+      detail: "The model JSON had no summary.",
+      retryable: true,
+    });
+  }
 
   const addressedQuestion = cleanString(
     data.addressedQuestion ?? data.addressed_question ?? "",
@@ -262,20 +349,25 @@ export function parseCritique(payload) {
   for (const raw of rawCategories) {
     const name = canonicalName(raw?.name);
     if (!name || byName.has(name)) continue;
-    const grade = cleanString(raw?.grade).toUpperCase();
+    const grade = cleanString(raw?.grade).toUpperCase().replace(/[^A-F]/g, "").slice(0, 1);
     const score = readScore(raw?.score);
     const explanation = cleanString(raw?.explanation);
-    const tips = Array.isArray(raw?.tips)
-      ? raw.tips.map(cleanString).filter(Boolean)
-      : [];
+    const tips = readTips(raw?.tips);
     if (!GRADES.includes(grade) || score == null || !explanation || tips.length === 0) {
-      throw new CritiqueError("model", modelMessage());
+      throw new CritiqueError("model", modelMessage(), {
+        detail: `Couldn't read the ${name} category (grade, score, explanation, or tips).`,
+        retryable: true,
+      });
     }
     byName.set(name, { name, grade, score, explanation, tips });
   }
 
   if (byName.size !== CATEGORY_ORDER.length) {
-    throw new CritiqueError("model", modelMessage());
+    const found = [...byName.keys()].join(", ") || "none";
+    throw new CritiqueError("model", modelMessage(), {
+      detail: `The model JSON did not include all four categories. Found: ${found}.`,
+      retryable: true,
+    });
   }
 
   return {
@@ -308,21 +400,26 @@ function isAuthFailure(message, status) {
 export function toCritiqueError(error) {
   if (error instanceof CritiqueError) return error;
   if (error?.name === "AbortError") {
-    return new CritiqueError("aborted", "Cancelled.");
+    return new CritiqueError("aborted", "Cancelled.", { detail: extractMessage(error) });
   }
 
   const message = extractMessage(error);
-  const status = Number(error?.status || error?.statusCode || 0);
+  const status = geminiHttpStatus(error);
+  const detail = [status ? `HTTP ${status}` : "", message].filter(Boolean).join(" — ");
   if (isAuthFailure(message, status)) {
-    return new CritiqueError("auth", rejectedKeyMessage());
+    return new CritiqueError("auth", rejectedKeyMessage(), { detail });
   }
   if (/failed to fetch|networkerror|network error|econn|timed out|timeout|offline/i.test(message)) {
     return new CritiqueError(
       "model",
       "Couldn't reach Gemini. Check your connection and try again.",
+      { detail, retryable: true },
     );
   }
-  return new CritiqueError("model", modelMessage());
+  return new CritiqueError("model", modelMessage(), {
+    detail,
+    retryable: isRetryableGeminiError(error),
+  });
 }
 
 export function mockCritique(question) {

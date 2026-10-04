@@ -11,6 +11,7 @@ const PHASE_COPY = {
   upload: "Uploading this recording to Gemini…",
   process: "Processing your video…",
   grade: "Grading cadence, eye contact, filler words, and intonation…",
+  retry: "Gemini's first answer couldn't be read. Trying again…",
 };
 
 function nextMessageId() {
@@ -160,6 +161,7 @@ const VideoCritique = ({ videoFile, question, onSeek }) => {
         <GeminiAlert
           kind={error.kind}
           message={error.message}
+          detail={error.detail}
           onRetry={() => setRetryCount((count) => count + 1)}
         />
       ) : null}
@@ -248,7 +250,11 @@ const VideoCritique = ({ videoFile, question, onSeek }) => {
           {liveReply}
         </p>
         {chatError ? (
-          <GeminiAlert kind={chatError.kind} message={chatError.message} />
+          <GeminiAlert
+            kind={chatError.kind}
+            message={chatError.message}
+            detail={chatError.detail}
+          />
         ) : null}
         <form onSubmit={sendFollowUp}>
           <div className="inline-field">
