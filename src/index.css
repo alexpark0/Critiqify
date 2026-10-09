@@ -208,6 +208,23 @@ button:disabled {
   margin-top: 6px;
 }
 
+.gemini-alert .error-details {
+  margin: 4px 0 8px;
+}
+
+.gemini-alert .error-details summary {
+  cursor: pointer;
+  color: var(--text-soft);
+}
+
+.gemini-alert .error-details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
 .status-ok {
   color: var(--ok);
 }

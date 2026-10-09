@@ -1,5 +1,12 @@
-/** Raw bytes that still fit inline after base64 expands them under Gemini's 20MB request limit. */
-export const INLINE_VIDEO_MAX_BYTES = 14 * 1024 * 1024;
+/**
+ * Raw bytes that still fit inline after base64 expands them under Gemini's
+ * 20MB request limit. 10 MiB becomes about 14MB of base64, leaving room for
+ * the prompt and the JSON schema. Larger clips use the Files API.
+ */
+export const INLINE_VIDEO_MAX_BYTES = 10 * 1024 * 1024;
+
+/** How long to wait for a Files API upload to leave PROCESSING. */
+export const FILE_PROCESS_TIMEOUT_MS = 5 * 60 * 1000;
 
 /** Free-tier Gemini Files API limit per video. */
 export const FILE_API_MAX_BYTES = 2 * 1024 * 1024 * 1024;
@@ -26,11 +33,24 @@ const CATEGORY_ALIASES = {
 const KEY_URL = "https://aistudio.google.com/apikey";
 
 export class CritiqueError extends Error {
-  constructor(kind, message) {
+  constructor(kind, message, extra) {
     super(message);
     this.name = "CritiqueError";
     this.kind = kind;
+    const options = typeof extra === "string" ? { detail: extra } : extra || {};
+    this.detail = typeof options.detail === "string" ? options.detail : "";
+    this.retryable = Boolean(options.retryable);
   }
+}
+
+/** Gemini lists video/webm, not the codec suffix MediaRecorder often appends. */
+export function normalizeVideoMimeType(type) {
+  const raw = typeof type === "string" ? type.trim().toLowerCase() : "";
+  const base = raw.split(";")[0].trim();
+  if (base === "video/webm" || base === "video/mp4" || base === "video/quicktime" || base === "video/mpeg") {
+    return base;
+  }
+  return "video/webm";
 }
 
 export function missingKeyMessage(action) {
@@ -53,6 +73,14 @@ export function modelMessage() {
   return "Gemini couldn't finish this critique. The model may be busy, or the response couldn't be read. Try again.";
 }
 
+export function stillProcessingMessage() {
+  return "This recording is still processing. It can take a few minutes. Try again, or record a shorter clip.";
+}
+
+export function fileFailedMessage() {
+  return "Gemini couldn't process this recording. Try a shorter clip.";
+}
+
 export function titleForKind(kind) {
   switch (kind) {
     case "missing_key":
@@ -61,6 +89,8 @@ export function titleForKind(kind) {
       return "Gemini rejected the API key";
     case "upload":
       return "Upload failed";
+    case "processing":
+      return "Video still processing";
     case "model":
       return "Gemini couldn't respond";
     default:
@@ -76,12 +106,56 @@ export function deliveryMode(byteLength) {
 }
 
 export function normalizeFileState(state) {
-  if (state == null || state === "") return "ACTIVE";
-  if (typeof state === "string") return state.toUpperCase();
-  if (typeof state === "object" && typeof state.name === "string") {
-    return state.name.toUpperCase();
+  let normalized = "";
+  if (typeof state === "string") normalized = state.toUpperCase();
+  else if (state && typeof state === "object" && typeof state.name === "string") {
+    normalized = state.name.toUpperCase();
+  } else if (state != null && state !== "") {
+    normalized = String(state).toUpperCase();
   }
-  return String(state).toUpperCase();
+  if (!normalized || normalized === "STATE_UNSPECIFIED") return "PENDING";
+  return normalized;
+}
+
+export function unwrapGeminiFile(value) {
+  if (
+    value &&
+    typeof value === "object" &&
+    value.file &&
+    typeof value.file === "object" &&
+    (value.file.name || value.file.uri || value.file.state)
+  ) {
+    return value.file;
+  }
+  return value;
+}
+
+export function nextPollDelayMs(previous) {
+  if (!previous || previous < 1000) return 1000;
+  return Math.min(previous * 2, 8000);
+}
+
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+export function geminiHttpStatus(error) {
+  const status = Number(error?.status || error?.statusCode || 0);
+  return Number.isFinite(status) ? status : 0;
+}
+
+export function isRetryableGeminiError(error) {
+  if (!error || error?.name === "AbortError" || error instanceof CritiqueError) return false;
+  if (RETRYABLE_STATUSES.has(geminiHttpStatus(error))) return true;
+  const message = extractMessage(error).toLowerCase();
+  return /resource_exhausted|unavailable|overloaded|rate limit|too many requests|internal error/.test(
+    message,
+  );
+}
+
+export function isFileNotReadyError(error) {
+  const message = extractMessage(error).toLowerCase();
+  return /not in an active state|still processing|file .{0,80}processing|not ready|failed_precondition/.test(
+    message,
+  );
 }
 
 export function buildCritiquePrompt(question) {
@@ -167,30 +241,104 @@ function canonicalName(value) {
 
 function readScore(value) {
   const score = typeof value === "number" ? value : Number(cleanString(value));
-  if (!Number.isInteger(score) || score < 1 || score > 10) return null;
-  return score;
+  if (!Number.isFinite(score)) return null;
+  const rounded = Math.round(score);
+  if (rounded < 1 || rounded > 10) return null;
+  return rounded;
+}
+
+function readTips(value) {
+  if (Array.isArray(value)) return value.map(cleanString).filter(Boolean);
+  const single = cleanString(value);
+  return single ? [single] : [];
+}
+
+function parseJsonObject(text) {
+  const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch {
+        // Fall through to the shared parse error.
+      }
+    }
+  }
+  throw new CritiqueError("model", modelMessage(), {
+    detail: `Response was not valid JSON. It starts with: ${trimmed.slice(0, 240)}`,
+    retryable: true,
+  });
+}
+
+const BLOCKED_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"]);
+const INCOMPLETE_FINISH = new Set(["MAX_TOKENS", "MALFORMED_FUNCTION_CALL", "OTHER", "LANGUAGE"]);
+
+export function readGenerateResult(response) {
+  const candidate = response?.candidates?.[0];
+  const finishReason = String(candidate?.finishReason || "");
+  const blockReason = String(response?.promptFeedback?.blockReason || "");
+  const parts = candidate?.content?.parts;
+  let text = "";
+  if (Array.isArray(parts)) {
+    for (const part of parts) {
+      if (part?.thought === true) continue;
+      if (typeof part?.text === "string") text += part.text;
+    }
+  }
+  const usage = response?.usageMetadata || {};
+  const thoughtsTokenCount = Number.isFinite(usage.thoughtsTokenCount) ? usage.thoughtsTokenCount : null;
+  const candidatesTokenCount = Number.isFinite(usage.candidatesTokenCount)
+    ? usage.candidatesTokenCount
+    : null;
+  const blocked = Boolean(blockReason) || BLOCKED_FINISH.has(finishReason);
+  const incomplete = INCOMPLETE_FINISH.has(finishReason) || (!text.trim() && !blocked);
+  return {
+    text,
+    finishReason,
+    blockReason,
+    thoughtsTokenCount,
+    candidatesTokenCount,
+    blocked,
+    retryable: !blocked && (incomplete || !text.trim()),
+  };
+}
+
+export function describeGenerateResult(result, note = "") {
+  const lines = [];
+  if (note) lines.push(note);
+  if (result?.finishReason) lines.push(`finishReason: ${result.finishReason}`);
+  if (result?.blockReason) lines.push(`blockReason: ${result.blockReason}`);
+  if (result?.thoughtsTokenCount != null) lines.push(`thoughtsTokenCount: ${result.thoughtsTokenCount}`);
+  if (result?.candidatesTokenCount != null) {
+    lines.push(`candidatesTokenCount: ${result.candidatesTokenCount}`);
+  }
+  const snippet = typeof result?.text === "string" ? result.text.trim().slice(0, 500) : "";
+  if (snippet) lines.push(`model text: ${snippet}`);
+  return lines.join("\n");
 }
 
 export function parseCritique(payload) {
   let data = payload;
-  if (typeof payload === "string") {
-    const trimmed = payload
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
-    try {
-      data = JSON.parse(trimmed);
-    } catch {
-      throw new CritiqueError("model", modelMessage());
-    }
-  }
+  if (typeof payload === "string") data = parseJsonObject(payload);
 
   if (!data || typeof data !== "object") {
-    throw new CritiqueError("model", modelMessage());
+    throw new CritiqueError("model", modelMessage(), {
+      detail: "The model response was empty.",
+      retryable: true,
+    });
   }
 
   const summary = cleanString(data.summary);
-  if (!summary) throw new CritiqueError("model", modelMessage());
+  if (!summary) {
+    throw new CritiqueError("model", modelMessage(), {
+      detail: "The model JSON had no summary.",
+      retryable: true,
+    });
+  }
 
   const addressedQuestion = cleanString(
     data.addressedQuestion ?? data.addressed_question ?? "",
@@ -201,20 +349,25 @@ export function parseCritique(payload) {
   for (const raw of rawCategories) {
     const name = canonicalName(raw?.name);
     if (!name || byName.has(name)) continue;
-    const grade = cleanString(raw?.grade).toUpperCase();
+    const grade = cleanString(raw?.grade).toUpperCase().replace(/[^A-F]/g, "").slice(0, 1);
     const score = readScore(raw?.score);
     const explanation = cleanString(raw?.explanation);
-    const tips = Array.isArray(raw?.tips)
-      ? raw.tips.map(cleanString).filter(Boolean)
-      : [];
+    const tips = readTips(raw?.tips);
     if (!GRADES.includes(grade) || score == null || !explanation || tips.length === 0) {
-      throw new CritiqueError("model", modelMessage());
+      throw new CritiqueError("model", modelMessage(), {
+        detail: `Couldn't read the ${name} category (grade, score, explanation, or tips).`,
+        retryable: true,
+      });
     }
     byName.set(name, { name, grade, score, explanation, tips });
   }
 
   if (byName.size !== CATEGORY_ORDER.length) {
-    throw new CritiqueError("model", modelMessage());
+    const found = [...byName.keys()].join(", ") || "none";
+    throw new CritiqueError("model", modelMessage(), {
+      detail: `The model JSON did not include all four categories. Found: ${found}.`,
+      retryable: true,
+    });
   }
 
   return {
@@ -247,21 +400,26 @@ function isAuthFailure(message, status) {
 export function toCritiqueError(error) {
   if (error instanceof CritiqueError) return error;
   if (error?.name === "AbortError") {
-    return new CritiqueError("aborted", "Cancelled.");
+    return new CritiqueError("aborted", "Cancelled.", { detail: extractMessage(error) });
   }
 
   const message = extractMessage(error);
-  const status = Number(error?.status || error?.statusCode || 0);
+  const status = geminiHttpStatus(error);
+  const detail = [status ? `HTTP ${status}` : "", message].filter(Boolean).join(" — ");
   if (isAuthFailure(message, status)) {
-    return new CritiqueError("auth", rejectedKeyMessage());
+    return new CritiqueError("auth", rejectedKeyMessage(), { detail });
   }
   if (/failed to fetch|networkerror|network error|econn|timed out|timeout|offline/i.test(message)) {
     return new CritiqueError(
       "model",
       "Couldn't reach Gemini. Check your connection and try again.",
+      { detail, retryable: true },
     );
   }
-  return new CritiqueError("model", modelMessage());
+  return new CritiqueError("model", modelMessage(), {
+    detail,
+    retryable: isRetryableGeminiError(error),
+  });
 }
 
 export function mockCritique(question) {

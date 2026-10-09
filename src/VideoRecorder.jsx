@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createClient } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import { normalizeVideoMimeType } from "./gemini/critiqueFormat.js";
 import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
@@ -22,6 +23,17 @@ function formatStamp(now = new Date()) {
 
 function stopStream(stream) {
   stream?.getTracks().forEach((track) => track.stop());
+}
+
+async function hasWebmHeader(blob) {
+  const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  return (
+    header.length === 4 &&
+    header[0] === 0x1a &&
+    header[1] === 0x45 &&
+    header[2] === 0xdf &&
+    header[3] === 0xa3
+  );
 }
 
 const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, ref) {
@@ -133,26 +145,32 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
     try {
       const media = new MediaRecorder(streamRef.current, { mimeType });
       recorderRef.current = media;
-      media.ondataavailable = (event) => {
-        if (!event.data || event.data.size === 0) return;
-        chunksRef.current.push(event.data);
-      };
-      media.onstop = () => {
-        const stamp = formatStamp();
-        const videoBlob = new Blob(chunksRef.current, { type: mimeType });
-        chunksRef.current = [];
+      let settled = false;
+      const settleRecording = async () => {
+        if (settled) return;
+        settled = true;
+        if (!mountedRef.current) return;
+        const chunks = chunksRef.current.splice(0);
+        const recordedType = normalizeVideoMimeType(media.mimeType || mimeType);
+        const videoBlob = new Blob(chunks, { type: recordedType });
         releasePreview();
         setPermission(false);
         setRecordingStatus("inactive");
-        if (videoBlob.size === 0) {
-          setError("The recording was empty. Try again.");
+        if (videoBlob.size < 256 || !(await hasWebmHeader(videoBlob))) {
+          if (!mountedRef.current) return;
+          setError("The recording didn't finish. Try again.");
           onRecordingReady?.(null);
           return;
         }
+        const stamp = formatStamp();
         const videoUrl = URL.createObjectURL(videoBlob);
         const file = new File([videoBlob], `${stamp}.webm`, {
-          type: "video/webm",
+          type: recordedType,
         });
+        if (!mountedRef.current) {
+          URL.revokeObjectURL(videoUrl);
+          return;
+        }
         if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
         recordedUrlRef.current = videoUrl;
         setRecordedVideo(videoUrl);
@@ -160,7 +178,18 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
         setDate(stamp);
         onRecordingReady?.(file);
       };
-      media.start();
+      media.ondataavailable = (event) => {
+        if (!event.data || event.data.size === 0) return;
+        chunksRef.current.push(event.data);
+      };
+      media.onstop = () => {
+        // The last chunk can arrive after `stop` in some browsers. Wait so the
+        // blob Gemini receives is the full recording, not a partial one.
+        window.setTimeout(() => {
+          settleRecording();
+        }, 250);
+      };
+      media.start(1000);
       setRecordingStatus("recording");
     } catch {
       setRecordingStatus("inactive");
@@ -171,6 +200,11 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
   const stopRecording = () => {
     const media = recorderRef.current;
     if (!media || media.state === "inactive") return;
+    try {
+      if (media.state === "recording") media.requestData();
+    } catch {
+      // stop() still flushes whatever is buffered.
+    }
     media.stop();
   };
 

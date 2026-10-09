@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "test": "node --test src/gemini/critiqueFormat.test.js src/playback/time.test.js",
+    "test": "node --test src/gemini/critiqueFormat.test.js src/gemini/critiqueClient.test.js src/gemini/critiqueHarness.test.js src/playback/time.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
