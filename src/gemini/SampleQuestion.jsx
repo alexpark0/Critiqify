@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
+import { teleprompterView } from "../record/teleprompter.js";
 import { createGeminiClient } from "./geminiClient.js";
 import { toCritiqueError } from "./critiqueFormat.js";
 import { GEMINI_MODEL, isMockGemini } from "./geminiEnv.js";
@@ -13,11 +14,22 @@ const MOCK_QUESTIONS = [
 const PROMPT =
   "give me a sample interview question for a software engineering internship. respond in one sentence.";
 
-const SampleQuestion = ({ onQuestion }) => {
-  const [aiResponse, setResponse] = useState("");
+const SampleQuestion = ({
+  onQuestion,
+  question = "",
+  elapsedSeconds = 0,
+  playbackSeconds = 0,
+  mode = "idle",
+}) => {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const [mockIndex, setMockIndex] = useState(0);
+  const prompt = teleprompterView({
+    question,
+    elapsedSeconds,
+    playbackSeconds,
+    mode,
+  });
 
   async function aiRun() {
     setStatus("loading");
@@ -39,7 +51,6 @@ const SampleQuestion = ({ onQuestion }) => {
           throw new Error("Gemini returned an empty question.");
         }
       }
-      setResponse(text);
       onQuestion?.(text);
       setStatus("ready");
     } catch (caught) {
@@ -58,22 +69,29 @@ const SampleQuestion = ({ onQuestion }) => {
   }
 
   return (
-    <div>
-      <button type="button" onClick={aiRun} disabled={status === "loading"}>
-        {status === "loading" ? "Generating…" : "Generate Interview Question"}
-      </button>
+    <section className="teleprompter" aria-label="Teleprompter">
+      <div className="teleprompter-bar">
+        <p className="teleprompter-cue">{prompt.cue}</p>
+        <span className={`timer-pill is-${prompt.timerMode}`} role="timer" aria-label={prompt.timerLabel}>
+          {prompt.timerMode === "recording" ? (
+            <span className="recording-dot" aria-hidden="true" />
+          ) : null}
+          {prompt.timerText}
+        </span>
+        <button type="button" onClick={aiRun} disabled={status === "loading"}>
+          {status === "loading" ? "Generating…" : prompt.generateLabel}
+        </button>
+      </div>
       {status === "loading" ? (
         <p className="status" role="status">
           Asking for a practice question…
         </p>
       ) : null}
       {error ? <GeminiAlert kind={error.kind} message={error.message} /> : null}
-      {aiResponse ? (
-        <p className="ai-response" aria-live="polite">
-          {aiResponse}
-        </p>
-      ) : null}
-    </div>
+      <p className={prompt.hasQuestion ? "teleprompter-question" : "teleprompter-question is-placeholder"}>
+        {prompt.question}
+      </p>
+    </section>
   );
 };
 
@@ -81,4 +99,8 @@ export default SampleQuestion;
 
 SampleQuestion.propTypes = {
   onQuestion: PropTypes.func,
+  question: PropTypes.string,
+  elapsedSeconds: PropTypes.number,
+  playbackSeconds: PropTypes.number,
+  mode: PropTypes.string,
 };

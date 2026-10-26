@@ -1,19 +1,33 @@
 :root {
-  --bg: #2e3030;
-  --bg-deep: #292929;
-  --surface: #3a3c3c;
-  --text: #f4efe6;
-  --text-soft: #e7d3b0;
-  --gold: #d7b98a;
-  --gold-deep: #c4a574;
-  --cyan: #a3fdff;
-  --nav: #3d3428;
-  --danger: #ffc9c9;
-  --ok: #c8f5d0;
-  --line: rgba(215, 185, 138, 0.38);
+  --bg: #CCCDC7;
+  --bg-deep: #E8E6E0;
+  --surface: #F4F3EF;
+  --surface-bright: #FAF9F6;
+  --surface-muted: #E8E6E0;
+  --text: #5A322A;
+  --text-soft: #6E524C;
+  --accent: #BC7B6F;
+  --accent-fill: #9E5F54;
+  --accent-hover: #5A322A;
+  --accent-text: #FFFFFF;
+  --accent-tint: rgba(228, 164, 153, 0.42);
+  --blush: #E4A499;
+  --slate: #718A9E;
+  --slate-deep: #3D5568;
+  --line: #B8B9B2;
+  --line-strong: #B8B9B2;
+  --nav: #FAF9F6;
+  --focus: #5A322A;
+  --danger: #5A322A;
+  --danger-tint: rgba(228, 164, 153, 0.45);
+  --ok: #3D5568;
+  --ok-tint: rgba(113, 138, 158, 0.2);
+  --warn: #5A322A;
+  --warn-tint: rgba(228, 164, 153, 0.55);
   --nav-h: 68px;
   --font: "Lexend", "Noto Sans Display", sans-serif;
-  color-scheme: dark;
+  --shadow: 0 10px 28px rgba(90, 50, 42, 0.08);
+  color-scheme: light;
   font-family: var(--font);
   line-height: 1.5;
   font-weight: 400;
@@ -79,13 +93,14 @@ p {
 }
 
 a {
-  color: var(--cyan);
+  color: var(--text);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
 
 a:hover {
-  color: #e7ffff;
+  color: var(--text);
+  text-decoration-thickness: 2px;
 }
 
 img {
@@ -107,8 +122,8 @@ button,
   font-weight: 550;
   font-family: inherit;
   line-height: 1.2;
-  background-color: var(--gold);
-  color: #1c1916;
+  background-color: var(--accent-fill);
+  color: var(--accent-text);
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -119,8 +134,9 @@ button,
 
 button:hover,
 .button:hover {
-  border-color: var(--cyan);
-  color: #1c1916;
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-text);
 }
 
 button:focus-visible,
@@ -128,7 +144,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--cyan);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -142,8 +158,8 @@ button:disabled {
   left: 12px;
   top: -48px;
   z-index: 30;
-  background: var(--gold);
-  color: #1c1916;
+  background: var(--accent-fill);
+  color: var(--accent-text);
   padding: 8px 12px;
   border-radius: 8px;
 }
@@ -170,7 +186,7 @@ button:disabled {
   border-radius: 18px;
   padding: 20px 18px;
   margin: 16px auto;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow);
 }
 
 .panel h2 {
@@ -189,11 +205,15 @@ button:disabled {
 }
 
 .status-error a {
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .gemini-alert {
   text-align: left;
+  background: var(--danger-tint);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px;
 }
 
 .gemini-alert p {
@@ -225,7 +245,8 @@ button:disabled {
   color: var(--text-soft);
 }
 
-.status-ok {
+.status-ok,
+.status-ok a {
   color: var(--ok);
 }
 
@@ -249,7 +270,7 @@ textarea {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #2a2c2c;
+  background: var(--surface-bright);
   color: var(--text);
   font: inherit;
   padding: 12px 14px;
@@ -278,7 +299,7 @@ textarea {
   max-width: 42rem;
   text-align: left;
   white-space: pre-wrap;
-  background: #2a2c2c;
+  background: var(--surface-muted);
   border-radius: 12px;
   padding: 14px 16px;
   color: var(--text);

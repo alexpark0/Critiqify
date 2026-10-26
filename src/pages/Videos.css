@@ -8,6 +8,90 @@
   margin-bottom: 8px;
 }
 
+.practice-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 0.7fr)) minmax(200px, 1.4fr);
+  gap: 12px 16px;
+  align-items: center;
+  margin: 8px 0 20px;
+  padding: 16px 18px;
+  text-align: left;
+  background: #F4F3EF;
+  border: 1px solid #B8B9B2;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(90, 50, 42, 0.06);
+}
+
+.practice-stat {
+  min-width: 0;
+}
+
+.practice-stat-value {
+  margin: 0;
+  color: #5A322A;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.practice-stat-label {
+  margin: 6px 0 0;
+  color: #6E524C;
+  font-size: 0.92rem;
+}
+
+.practice-trend {
+  min-width: 0;
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: 56px;
+  overflow: visible;
+}
+
+.trend-area {
+  fill: rgba(113, 138, 158, 0.2);
+  stroke: none;
+}
+
+.trend-line {
+  fill: none;
+  stroke: #718A9E;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-preview {
+  fill: none;
+  stroke: #B8B9B2;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-dot.is-strong {
+  fill: #718A9E;
+  stroke: #3D5568;
+  stroke-width: 1.5;
+}
+
+.trend-dot.is-flag {
+  fill: #E4A499;
+  stroke: #5A322A;
+  stroke-width: 1.5;
+}
+
+.trend-caption {
+  margin: 4px 0 0;
+  color: #6E524C;
+  font-size: 0.88rem;
+}
+
 .logs-container {
   display: flex;
   gap: 20px;
@@ -20,15 +104,16 @@
   display: flex;
   flex: 1 1 280px;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
   width: min(100%, 360px);
   max-width: 420px;
-  border: 1px solid var(--line);
+  border: 1px solid #B8B9B2;
   border-radius: 16px;
-  background: var(--surface);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: #F4F3EF;
+  box-shadow: 0 8px 24px rgba(90, 50, 42, 0.06);
   padding: 16px 16px 20px;
+  text-align: left;
 }
 
 .log-card h2 {
@@ -39,7 +124,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: 10px;
-  background: #111;
+  background: #5A322A;
   object-fit: contain;
 }
 
@@ -48,9 +133,54 @@
   font-size: 1rem;
   text-align: left;
   width: 100%;
-  color: var(--text);
+  color: #5A322A;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.log-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.log-score {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  background: #E8E6E0;
+  color: #5A322A;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.log-score.is-strong {
+  color: #3D5568;
+  background: rgba(113, 138, 158, 0.22);
+}
+
+.log-score.is-flag {
+  color: #5A322A;
+  background: #E4A499;
+}
+
+.log-local-note {
+  margin: 12px 0 0;
+  color: #6E524C;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 800px) {
+  .practice-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .practice-trend {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
