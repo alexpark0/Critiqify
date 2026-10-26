@@ -1,5 +1,6 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import { layoutTimelineMarkers } from "./markers.js";
 import { finiteDuration, formatClock } from "./time.js";
 
 function PlayIcon() {
@@ -18,7 +19,10 @@ function PauseIcon() {
   );
 }
 
-const RecordedPlayer = forwardRef(function RecordedPlayer({ src }, ref) {
+const RecordedPlayer = forwardRef(function RecordedPlayer(
+  { src, markers = [], activeCategory = "all", onTimeUpdate },
+  ref,
+) {
   const frameRef = useRef(null);
   const videoRef = useRef(null);
   const fixingRef = useRef(false);
@@ -217,6 +221,15 @@ const RecordedPlayer = forwardRef(function RecordedPlayer({ src }, ref) {
   const shownCurrent = safeDuration ? Math.min(current, safeDuration) : current;
   const progress = safeDuration ? (shownCurrent / safeDuration) * 100 : 0;
   const timeLabel = `${formatClock(shownCurrent)} of ${formatClock(safeDuration)}`;
+  const timeline = useMemo(
+    () => layoutTimelineMarkers(markers, safeDuration, activeCategory),
+    [markers, safeDuration, activeCategory],
+  );
+
+  useEffect(() => {
+    if (fixing) return;
+    onTimeUpdate?.(shownCurrent);
+  }, [fixing, onTimeUpdate, shownCurrent]);
 
   return (
     <div className="preview-frame has-playback" ref={frameRef}>
@@ -245,54 +258,79 @@ const RecordedPlayer = forwardRef(function RecordedPlayer({ src }, ref) {
           {playing ? <PauseIcon /> : <PlayIcon />}
         </button>
         <span className="playback-time">{formatClock(shownCurrent)}</span>
-        <input
-          type="range"
-          min={0}
-          max={safeDuration || 0}
-          step={0.1}
-          value={Number.isFinite(shownCurrent) ? shownCurrent : 0}
-          disabled={!safeDuration}
-          aria-label="Seek"
-          aria-valuemin={0}
-          aria-valuemax={Math.round(safeDuration)}
-          aria-valuenow={Math.round(shownCurrent) || 0}
-          aria-valuetext={timeLabel}
-          style={{ "--seek": `${progress}%` }}
-          onInput={(event) => applySeek(Number(event.target.value), false)}
-          onPointerDown={() => {
-            scrubbingRef.current = true;
-          }}
-          onPointerUp={() => {
-            scrubbingRef.current = false;
-          }}
-          onKeyDown={(event) => {
-            const jump =
-              event.key === "ArrowRight" ? 5 : event.key === "ArrowLeft" ? -5 : 0;
-            if (jump) {
-              event.preventDefault();
+        <div className="scrubber">
+          <input
+            type="range"
+            min={0}
+            max={safeDuration || 0}
+            step={0.1}
+            value={Number.isFinite(shownCurrent) ? shownCurrent : 0}
+            disabled={!safeDuration}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(safeDuration)}
+            aria-valuenow={Math.round(shownCurrent) || 0}
+            aria-valuetext={timeLabel}
+            style={{ "--seek": `${progress}%` }}
+            onInput={(event) => applySeek(Number(event.target.value), false)}
+            onPointerDown={() => {
               scrubbingRef.current = true;
-              applySeek(shownCurrent + jump, false);
-              return;
-            }
-            if (event.key === "Home") {
-              event.preventDefault();
-              applySeek(0, false);
-              return;
-            }
-            if (event.key === "End") {
-              event.preventDefault();
-              applySeek(safeDuration, false);
-              return;
-            }
-            scrubbingRef.current = true;
-          }}
-          onKeyUp={() => {
-            scrubbingRef.current = false;
-          }}
-          onBlur={() => {
-            scrubbingRef.current = false;
-          }}
-        />
+            }}
+            onPointerUp={() => {
+              scrubbingRef.current = false;
+            }}
+            onKeyDown={(event) => {
+              const jump =
+                event.key === "ArrowRight" ? 5 : event.key === "ArrowLeft" ? -5 : 0;
+              if (jump) {
+                event.preventDefault();
+                scrubbingRef.current = true;
+                applySeek(shownCurrent + jump, false);
+                return;
+              }
+              if (event.key === "Home") {
+                event.preventDefault();
+                applySeek(0, false);
+                return;
+              }
+              if (event.key === "End") {
+                event.preventDefault();
+                applySeek(safeDuration, false);
+                return;
+              }
+              scrubbingRef.current = true;
+            }}
+            onKeyUp={() => {
+              scrubbingRef.current = false;
+            }}
+            onBlur={() => {
+              scrubbingRef.current = false;
+            }}
+          />
+          <div className="timeline-markers">
+            {timeline.map((marker) => (
+              <button
+                key={marker.id}
+                type="button"
+                className={marker.dimmed ? "timeline-marker is-dimmed" : "timeline-marker"}
+                style={{
+                  "--at": `${marker.percent}%`,
+                  "--nudge": `${marker.nudge}px`,
+                  "--marker": marker.color,
+                }}
+                aria-label={`${marker.label} at ${marker.timestamp}. Seek to this moment.`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  applySeek(marker.seconds, true);
+                }}
+              >
+                <span className="marker-tip" aria-hidden="true">
+                  {marker.timestamp} · {marker.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
         <span className="playback-time is-total">{formatClock(safeDuration)}</span>
       </div>
     </div>
@@ -301,6 +339,18 @@ const RecordedPlayer = forwardRef(function RecordedPlayer({ src }, ref) {
 
 RecordedPlayer.propTypes = {
   src: PropTypes.string.isRequired,
+  markers: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      category: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      seconds: PropTypes.number.isRequired,
+      timestamp: PropTypes.string.isRequired,
+      tone: PropTypes.string.isRequired,
+    }),
+  ),
+  activeCategory: PropTypes.string,
+  onTimeUpdate: PropTypes.func,
 };
 
 export default RecordedPlayer;

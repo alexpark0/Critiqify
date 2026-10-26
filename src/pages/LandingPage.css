@@ -15,50 +15,64 @@
   overflow: hidden;
 }
 
-.hero-bg {
+.hero-bg,
+.how-to-bg {
   position: absolute;
   inset: -8%;
   z-index: -2;
-  background-color: #1a1c1e;
+  background-color: #FAF8F5;
   background-image: url("/critique-bg.webp");
   background-size: cover;
   background-position: center;
-  filter: blur(16px) saturate(0.8) brightness(0.92);
-  transform: scale(1.06);
+  filter: blur(18px) saturate(0.9) brightness(1.04);
+  transform: scale(1.08);
 }
 
-.hero-overlay {
+.hero-overlay,
+.how-to-overlay {
   position: absolute;
   inset: 0;
   z-index: -1;
+}
+
+.hero-overlay {
   background: linear-gradient(
     180deg,
-    rgba(12, 14, 16, 0.62) 0%,
-    rgba(12, 14, 16, 0.34) 50%,
-    rgba(12, 14, 16, 0.66) 100%
+    rgba(250, 248, 245, 0.84) 0%,
+    rgba(250, 248, 245, 0.68) 46%,
+    rgba(250, 248, 245, 0.88) 100%
   );
 }
 
 .hero-content {
   width: min(720px, 100%);
-  padding: 28px 32px 32px;
+  padding: 32px 32px 36px;
   border-radius: 24px;
-  background: rgba(10, 12, 14, 0.58);
-  border: 1px solid rgba(247, 244, 238, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #E6E1D6;
+  box-shadow: 0 18px 40px rgba(24, 24, 27, 0.06);
 }
 
 .hero h1 {
   font-size: clamp(2.2rem, 6vw, 4.25rem);
-  color: #f7f4ee;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+  color: #18181B;
+}
+
+.hero h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin: 18px auto 0;
+  border-radius: 999px;
+  background: #E04F33;
 }
 
 .lede {
-  margin: 0 auto 22px;
+  margin: 18px auto 22px;
   max-width: 28rem;
   font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-  color: #f3eadc;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+  color: #6B665E;
 }
 
 .scroll-cue {
@@ -71,16 +85,17 @@
   min-height: 48px;
   padding: 0;
   border-radius: 50%;
-  background: rgba(28, 25, 22, 0.55);
-  color: #f7f4ee;
-  border: 2px solid rgba(247, 244, 238, 0.45);
+  background: #FFFFFF;
+  color: #E04F33;
+  border: 2px solid #E6E1D6;
   font-size: 1.6rem;
+  box-shadow: 0 8px 20px rgba(24, 24, 27, 0.06);
 }
 
 .scroll-cue:hover {
-  color: #f7f4ee;
-  border-color: var(--cyan);
-  background: rgba(28, 25, 22, 0.75);
+  color: #C84127;
+  border-color: #E04F33;
+  background: #FFFFFF;
 }
 
 @keyframes fadeInFromAbove {
@@ -106,27 +121,12 @@
   overflow: hidden;
 }
 
-.how-to-bg {
-  position: absolute;
-  inset: -8%;
-  z-index: -2;
-  background-color: #1a1c1e;
-  background-image: url("/critique-bg.webp");
-  background-size: cover;
-  background-position: center;
-  filter: blur(16px) saturate(0.8) brightness(0.92);
-  transform: scale(1.06);
-}
-
 .how-to-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
   background: linear-gradient(
     180deg,
-    rgba(12, 14, 16, 0.72) 0%,
-    rgba(12, 14, 16, 0.5) 45%,
-    rgba(12, 14, 16, 0.74) 100%
+    rgba(250, 248, 245, 0.9) 0%,
+    rgba(250, 248, 245, 0.78) 45%,
+    rgba(250, 248, 245, 0.92) 100%
   );
 }
 
@@ -137,16 +137,24 @@
 
 .how-to h2 {
   font-size: clamp(2rem, 4vw, 2.8rem);
-  color: #f7f4ee;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+  color: #18181B;
+}
+
+.how-to h2::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 3px;
+  margin: 14px auto 0;
+  border-radius: 999px;
+  background: #E04F33;
 }
 
 .how-to-lede {
-  margin: 0 auto 28px;
+  margin: 16px auto 28px;
   max-width: 36rem;
-  color: #f3eadc;
+  color: #6B665E;
   font-size: 1.1rem;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
 
 .how-steps {
@@ -161,10 +169,11 @@
 
 .how-steps > li {
   min-width: 0;
-  background: rgba(10, 12, 14, 0.58);
-  border: 1px solid rgba(247, 244, 238, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #E6E1D6;
   border-radius: 18px;
   padding: 18px 16px 20px;
+  box-shadow: 0 10px 24px rgba(24, 24, 27, 0.05);
 }
 
 .how-step-index {
@@ -175,20 +184,20 @@
   height: 36px;
   margin-bottom: 12px;
   border-radius: 50%;
-  background: var(--gold);
-  color: #1c1916;
+  background: #E04F33;
+  color: #FFFFFF;
   font-weight: 650;
 }
 
 .how-steps h3 {
   margin: 0 0 8px;
   font-size: 1.15rem;
-  color: #f7f4ee;
+  color: #18181B;
 }
 
 .how-steps p {
   margin: 0;
-  color: #f3eadc;
+  color: #6B665E;
 }
 
 .how-to-action {
@@ -212,7 +221,7 @@
 
   .hero-bg,
   .how-to-bg {
-    filter: blur(12px) saturate(0.8) brightness(0.9);
+    filter: blur(12px) saturate(0.92) brightness(1.05);
   }
 
   .how-to {
