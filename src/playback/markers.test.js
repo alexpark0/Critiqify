@@ -78,7 +78,7 @@ test("layoutTimelineMarkers places dots on the scrubber and highlights the activ
   assert.equal(layoutTimelineMarkers(markers, 10, "all").some((marker) => marker.seconds === 65), false);
 });
 
-test("score meters use forest green from 7 up and amber below", () => {
+test("score meters use slate blue from 7 up and blush rose below", () => {
   const strong = scoreMeterModel(7);
   const flagged = scoreMeterModel(6);
   assert.equal(strong.tone, "strong");

@@ -1,7 +1,7 @@
 import { splitTimestamps } from "./time.js";
 
-export const STRONG_COLOR = "#1E6F5C";
-export const FLAG_COLOR = "#D97706";
+export const STRONG_COLOR = "#718A9E";
+export const FLAG_COLOR = "#E4A499";
 
 const CATEGORY_LABELS = {
   "Cadence (pacing)": "Cadence",

@@ -6,7 +6,7 @@ button.timestamp-link {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #E04F33;
+  color: #5A322A;
   font-size: inherit;
   font-weight: 650;
   line-height: inherit;
@@ -16,8 +16,8 @@ button.timestamp-link {
 }
 
 button.timestamp-link:hover {
-  background: rgba(224, 79, 51, 0.12);
-  color: #C84127;
+  background: rgba(228, 164, 153, 0.55);
+  color: #5A322A;
   border-color: transparent;
 }
 
@@ -31,7 +31,7 @@ button.timestamp-link:hover {
 .category-card h3 {
   margin: 0 0 6px;
   font-size: 1.02rem;
-  color: #18181B;
+  color: #5A322A;
 }
 
 .feedback-tabs {
@@ -40,9 +40,9 @@ button.timestamp-link:hover {
   gap: 4px;
   margin: 0 0 14px;
   padding: 4px;
-  border: 1px solid #E6E1D6;
+  border: 1px solid #B8B9B2;
   border-radius: 999px;
-  background: #F3EFE7;
+  background: #E8E6E0;
 }
 
 .feedback-tabs button {
@@ -51,23 +51,23 @@ button.timestamp-link:hover {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #6B665E;
+  color: #6E524C;
   box-shadow: none;
 }
 
 .feedback-tabs button:hover {
   background: transparent;
   border-color: transparent;
-  color: #18181B;
+  color: #5A322A;
 }
 
 .feedback-tabs button[aria-selected="true"] {
-  background: #E04F33;
+  background: #9E5F54;
   color: #FFFFFF;
 }
 
 .feedback-tabs button[aria-selected="true"]:hover {
-  background: #C84127;
+  background: #5A322A;
   color: #FFFFFF;
 }
 
@@ -79,14 +79,14 @@ button.timestamp-link:hover {
   height: 1.25rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: #FFFFFF;
-  color: #E04F33;
+  background: #FAF9F6;
+  color: #5A322A;
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .feedback-tabs button:not([aria-selected="true"]) .tab-badge {
-  background: #E04F33;
+  background: #9E5F54;
   color: #FFFFFF;
 }
 
@@ -101,7 +101,7 @@ button.timestamp-link:hover {
 .critique-body p,
 .summary-block p,
 .category-card p {
-  color: #6B665E;
+  color: #6E524C;
 }
 
 .summary-block {
@@ -119,36 +119,36 @@ button.timestamp-link:hover {
 button.category-name {
   min-height: 36px;
   padding: 0.3rem 0.8rem;
-  border: 1px solid #E6E1D6;
+  border: 1px solid #B8B9B2;
   border-radius: 999px;
-  background: #FFFFFF;
-  color: #18181B;
+  background: #FAF9F6;
+  color: #5A322A;
 }
 
 .filter-pills button:hover,
 button.category-name:hover {
-  border-color: #D5CEC0;
-  background: #F3EFE7;
-  color: #18181B;
+  border-color: #E4A499;
+  background: #E4A499;
+  color: #5A322A;
 }
 
 .filter-pills button[aria-pressed="true"],
 button.category-name[aria-pressed="true"] {
-  background: #E04F33;
-  border-color: #E04F33;
+  background: #9E5F54;
+  border-color: #9E5F54;
   color: #FFFFFF;
 }
 
 .filter-pills button[aria-pressed="true"]:hover,
 button.category-name[aria-pressed="true"]:hover {
-  background: #C84127;
-  border-color: #C84127;
+  background: #5A322A;
+  border-color: #5A322A;
   color: #FFFFFF;
 }
 
 .filter-status {
   margin: 0 0 12px;
-  color: #6B665E;
+  color: #6E524C;
   font-size: 0.9rem;
 }
 
@@ -160,16 +160,16 @@ button.category-name[aria-pressed="true"]:hover {
 }
 
 .category-card {
-  background: #F3EFE7;
-  border: 1px solid #E6E1D6;
+  background: #E8E6E0;
+  border: 1px solid #B8B9B2;
   border-radius: 14px;
   padding: 12px 14px 14px;
 }
 
 .category-card.is-active {
-  border-color: #E04F33;
-  box-shadow: inset 0 0 0 1px #E04F33;
-  background: #FFFFFF;
+  border-color: #BC7B6F;
+  box-shadow: inset 0 0 0 1px #BC7B6F;
+  background: #FAF9F6;
 }
 
 .category-head {
@@ -208,26 +208,28 @@ button.category-name {
 }
 
 .grade-badge.is-strong {
-  background: #1E6F5C;
+  background: #3D5568;
+  color: #FFFFFF;
 }
 
 .grade-badge.is-flag {
-  background: #D97706;
+  background: #E4A499;
+  color: #5A322A;
 }
 
 .score-value {
-  color: #18181B;
+  color: #5A322A;
   font-size: 0.95rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
 .score-value.is-strong {
-  color: #1E6F5C;
+  color: #3D5568;
 }
 
 .score-value.is-flag {
-  color: #D97706;
+  color: #5A322A;
 }
 
 .score-meter {
@@ -235,7 +237,8 @@ button.category-name {
   height: 8px;
   min-width: 72px;
   border-radius: 999px;
-  background: #E6E1D6;
+  background: #FAF9F6;
+  box-shadow: inset 0 0 0 1px #B8B9B2;
   overflow: hidden;
 }
 
@@ -243,27 +246,30 @@ button.category-name {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #D97706;
+  background: #E4A499;
+  box-shadow: inset 0 0 0 1px #BC7B6F;
 }
 
 .score-meter.is-strong .score-meter-fill {
-  background: #1E6F5C;
+  background: #718A9E;
+  box-shadow: none;
 }
 
 .score-meter.is-flag .score-meter-fill {
-  background: #D97706;
+  background: #E4A499;
+  box-shadow: inset 0 0 0 1px #BC7B6F;
 }
 
 .tips-label {
   margin: 10px 0 4px;
-  color: #18181B;
+  color: #5A322A;
   font-weight: 600;
 }
 
 .tips {
   margin: 0;
   padding-left: 1.15rem;
-  color: #6B665E;
+  color: #6E524C;
 }
 
 .tips li + li {
@@ -292,23 +298,24 @@ button.category-name {
 
 .chat-bubble p {
   margin: 0;
+  color: #5A322A;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .chat-bubble.is-user {
-  background: rgba(224, 79, 51, 0.12);
+  background: #E4A499;
 }
 
 .chat-bubble.is-model {
-  background: #F3EFE7;
-  border: 1px solid #E6E1D6;
+  background: #E8E6E0;
+  border: 1px solid #B8B9B2;
 }
 
 .chat-role {
   display: block;
   margin-bottom: 4px;
-  color: #E04F33;
+  color: #5A322A;
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.03em;

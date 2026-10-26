@@ -20,7 +20,7 @@
   position: absolute;
   inset: -8%;
   z-index: -2;
-  background-color: #FAF8F5;
+  background-color: #CCCDC7;
   background-image: url("/critique-bg.webp");
   background-size: cover;
   background-position: center;
@@ -38,9 +38,9 @@
 .hero-overlay {
   background: linear-gradient(
     180deg,
-    rgba(250, 248, 245, 0.84) 0%,
-    rgba(250, 248, 245, 0.68) 46%,
-    rgba(250, 248, 245, 0.88) 100%
+    rgba(204, 205, 199, 0.86) 0%,
+    rgba(204, 205, 199, 0.7) 46%,
+    rgba(204, 205, 199, 0.9) 100%
   );
 }
 
@@ -48,14 +48,14 @@
   width: min(720px, 100%);
   padding: 32px 32px 36px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #E6E1D6;
-  box-shadow: 0 18px 40px rgba(24, 24, 27, 0.06);
+  background: rgba(244, 243, 239, 0.94);
+  border: 1px solid #B8B9B2;
+  box-shadow: 0 18px 40px rgba(90, 50, 42, 0.08);
 }
 
 .hero h1 {
   font-size: clamp(2.2rem, 6vw, 4.25rem);
-  color: #18181B;
+  color: #5A322A;
 }
 
 .hero h1::after {
@@ -65,14 +65,14 @@
   height: 3px;
   margin: 18px auto 0;
   border-radius: 999px;
-  background: #E04F33;
+  background: #BC7B6F;
 }
 
 .lede {
   margin: 18px auto 22px;
   max-width: 28rem;
   font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-  color: #6B665E;
+  color: #6E524C;
 }
 
 .scroll-cue {
@@ -85,17 +85,17 @@
   min-height: 48px;
   padding: 0;
   border-radius: 50%;
-  background: #FFFFFF;
-  color: #E04F33;
-  border: 2px solid #E6E1D6;
+  background: #FAF9F6;
+  color: #BC7B6F;
+  border: 2px solid #B8B9B2;
   font-size: 1.6rem;
-  box-shadow: 0 8px 20px rgba(24, 24, 27, 0.06);
+  box-shadow: 0 8px 20px rgba(90, 50, 42, 0.08);
 }
 
 .scroll-cue:hover {
-  color: #C84127;
-  border-color: #E04F33;
-  background: #FFFFFF;
+  color: #5A322A;
+  border-color: #BC7B6F;
+  background: #E4A499;
 }
 
 @keyframes fadeInFromAbove {
@@ -124,9 +124,9 @@
 .how-to-overlay {
   background: linear-gradient(
     180deg,
-    rgba(250, 248, 245, 0.9) 0%,
-    rgba(250, 248, 245, 0.78) 45%,
-    rgba(250, 248, 245, 0.92) 100%
+    rgba(204, 205, 199, 0.92) 0%,
+    rgba(204, 205, 199, 0.82) 45%,
+    rgba(204, 205, 199, 0.94) 100%
   );
 }
 
@@ -137,7 +137,7 @@
 
 .how-to h2 {
   font-size: clamp(2rem, 4vw, 2.8rem);
-  color: #18181B;
+  color: #5A322A;
 }
 
 .how-to h2::after {
@@ -147,13 +147,13 @@
   height: 3px;
   margin: 14px auto 0;
   border-radius: 999px;
-  background: #E04F33;
+  background: #BC7B6F;
 }
 
 .how-to-lede {
   margin: 16px auto 28px;
   max-width: 36rem;
-  color: #6B665E;
+  color: #6E524C;
   font-size: 1.1rem;
 }
 
@@ -169,11 +169,11 @@
 
 .how-steps > li {
   min-width: 0;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #E6E1D6;
+  background: rgba(244, 243, 239, 0.94);
+  border: 1px solid #B8B9B2;
   border-radius: 18px;
   padding: 18px 16px 20px;
-  box-shadow: 0 10px 24px rgba(24, 24, 27, 0.05);
+  box-shadow: 0 10px 24px rgba(90, 50, 42, 0.06);
 }
 
 .how-step-index {
@@ -184,7 +184,7 @@
   height: 36px;
   margin-bottom: 12px;
   border-radius: 50%;
-  background: #E04F33;
+  background: #9E5F54;
   color: #FFFFFF;
   font-weight: 650;
 }
@@ -192,12 +192,12 @@
 .how-steps h3 {
   margin: 0 0 8px;
   font-size: 1.15rem;
-  color: #18181B;
+  color: #5A322A;
 }
 
 .how-steps p {
   margin: 0;
-  color: #6B665E;
+  color: #6E524C;
 }
 
 .how-to-action {

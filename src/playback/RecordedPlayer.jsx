@@ -312,7 +312,7 @@ const RecordedPlayer = forwardRef(function RecordedPlayer(
               <button
                 key={marker.id}
                 type="button"
-                className={marker.dimmed ? "timeline-marker is-dimmed" : "timeline-marker"}
+                className={`timeline-marker is-${marker.tone === "strong" ? "strong" : "flag"}${marker.dimmed ? " is-dimmed" : ""}`}
                 style={{
                   "--at": `${marker.percent}%`,
                   "--nudge": `${marker.nudge}px`,
