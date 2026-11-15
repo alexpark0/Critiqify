@@ -2,7 +2,9 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createClient } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import { DEMO_VIDEO_SRC } from "./demo/demoMode.js";
 import { normalizeVideoMimeType } from "./gemini/critiqueFormat.js";
+import SampleQuestion from "./gemini/SampleQuestion.jsx";
 import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
@@ -36,7 +38,18 @@ async function hasWebmHeader(blob) {
   );
 }
 
-const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, ref) {
+const VideoRecorder = forwardRef(function VideoRecorder(
+  {
+    onRecordingReady,
+    question = "",
+    onQuestion,
+    markers = [],
+    activeCategory = "all",
+    demo = false,
+    onTakeSaved,
+  },
+  ref,
+) {
   const liveVideoRef = useRef(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -53,8 +66,12 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
   const [saveState, setSaveState] = useState("idle");
   const [saveError, setSaveError] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const requestingRef = useRef(false);
   const mountedRef = useRef(true);
+  const onReadyRef = useRef(onRecordingReady);
+  onReadyRef.current = onRecordingReady;
 
   useEffect(() => {
     const video = liveVideoRef.current;
@@ -74,6 +91,51 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
       if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (recordingStatus !== "recording") return undefined;
+    const started = Date.now();
+    setElapsed(0);
+    const timer = window.setInterval(() => {
+      setElapsed((Date.now() - started) / 1000);
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [recordingStatus]);
+
+  useEffect(() => {
+    if (!demo) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await fetch(DEMO_VIDEO_SRC);
+        if (!response.ok) throw new Error("missing demo");
+        const blob = await response.blob();
+        if (cancelled) return;
+        const typed = blob.type ? blob : new Blob([blob], { type: "video/webm" });
+        const stamp = "10-26-2026-09.15.00";
+        const file = new File([typed], `${stamp}.webm`, { type: typed.type || "video/webm" });
+        const url = URL.createObjectURL(typed);
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
+        recordedUrlRef.current = url;
+        setRecordedVideo(url);
+        setVideoFile(file);
+        setDate(stamp);
+        setPermission(false);
+        setRecordingStatus("inactive");
+        onReadyRef.current?.(file, { id: stamp });
+      } catch {
+        if (!cancelled) setError("The sample recording could not be loaded.");
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [demo]);
 
   const releasePreview = () => {
     stopStream(streamRef.current);
@@ -176,7 +238,7 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
         setRecordedVideo(videoUrl);
         setVideoFile(file);
         setDate(stamp);
-        onRecordingReady?.(file);
+        onRecordingReady?.(file, { id: stamp });
       };
       media.ondataavailable = (event) => {
         if (!event.data || event.data.size === 0) return;
@@ -246,6 +308,7 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
         return;
       }
       setSaveState("saved");
+      onTakeSaved?.({ id: date, url: vidURL });
     } catch {
       setSaveState("error");
       setSaveError(
@@ -254,9 +317,47 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
     }
   }
 
+  const timerMode =
+    recordingStatus === "recording" ? "recording" : recordedVideo ? "playback" : "idle";
+
   return (
     <div>
       <h2 id="recorder-heading">Video Recorder</h2>
+      <SampleQuestion
+        question={question}
+        onQuestion={onQuestion}
+        elapsedSeconds={elapsed}
+        playbackSeconds={playbackSeconds}
+        mode={timerMode}
+      />
+      {error ? (
+        <p className="status status-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {!recordedVideo ? (
+        <div className="preview-frame">
+          <video
+            ref={liveVideoRef}
+            autoPlay
+            muted
+            playsInline
+            className="live-player"
+          />
+          {!permission ? (
+            <p className="preview-hint">Camera preview will show here.</p>
+          ) : null}
+        </div>
+      ) : (
+        <RecordedPlayer
+          ref={ref}
+          src={recordedVideo}
+          markers={markers}
+          activeCategory={activeCategory}
+          onTimeUpdate={setPlaybackSeconds}
+        />
+      )}
       <div className="recorder-controls">
         {!permission && recordingStatus !== "recording" ? (
           <button
@@ -278,34 +379,6 @@ const VideoRecorder = forwardRef(function VideoRecorder({ onRecordingReady }, re
           </button>
         ) : null}
       </div>
-      {recordingStatus === "recording" ? (
-        <p className="recording-status" role="status">
-          <span className="recording-dot" aria-hidden="true" />
-          Recording
-        </p>
-      ) : null}
-      {error ? (
-        <p className="status status-error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {!recordedVideo ? (
-        <div className="preview-frame">
-          <video
-            ref={liveVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="live-player"
-          />
-          {!permission ? (
-            <p className="preview-hint">Camera preview will show here.</p>
-          ) : null}
-        </div>
-      ) : (
-        <RecordedPlayer ref={ref} src={recordedVideo} />
-      )}
 
       {recordedVideo ? (
         <div className="recorded-player">
@@ -354,4 +427,10 @@ export default VideoRecorder;
 
 VideoRecorder.propTypes = {
   onRecordingReady: PropTypes.func,
+  question: PropTypes.string,
+  onQuestion: PropTypes.func,
+  markers: PropTypes.array,
+  activeCategory: PropTypes.string,
+  demo: PropTypes.bool,
+  onTakeSaved: PropTypes.func,
 };

@@ -11,8 +11,9 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 2px solid var(--cyan);
+  border-bottom: 1px solid var(--line);
   background-color: var(--nav);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .navbar-left,
@@ -28,32 +29,33 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--accent);
   text-decoration: none;
   padding: 6px 4px;
 }
 
 .navbar-brand:hover {
-  color: #e7ffff;
+  color: var(--accent-fill);
 }
 
 .nav-link {
   font-size: 1.05rem;
   font-weight: 500;
-  color: var(--cyan);
+  color: var(--text);
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 999px;
 }
 
 .nav-link:hover {
-  color: #e7ffff;
-  background: rgba(163, 253, 255, 0.08);
+  color: var(--text);
+  background: var(--accent-tint);
 }
 
 .nav-link.is-active {
-  background: rgba(163, 253, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(163, 253, 255, 0.75);
+  color: var(--text);
+  background: var(--accent-tint);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 @media (max-width: 520px) {

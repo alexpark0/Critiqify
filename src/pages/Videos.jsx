@@ -1,37 +1,68 @@
 import "./Videos.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
+import { isDemoMode } from "../demo/demoMode.js";
+import PracticeSummary from "../practice/PracticeSummary.jsx";
+import {
+  demoLogVideos,
+  demoScoreRecords,
+  formatLogDate,
+  readScoreStore,
+  summarizePractice,
+} from "../practice/practiceStats.js";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
 const supabaseKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZ3hheWxneWxtdGFrd2J4enNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1NDQ4ODksImV4cCI6MjA1MjEyMDg4OX0.PfvbMIX6IByuf6kTWQgykjwHta6IdDmBioy-xJhTTJQ";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function formatLogDate(value) {
-  const match = /^(\d+)-(\d+)-(\d+)-(\d+)\.(\d+)\.(\d+)$/.exec(value ?? "");
-  if (!match) return value || "Unknown date";
-  const [, month, day, year, hours, minutes] = match;
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hours),
-    Number(minutes),
+const SCORE_LABELS = [
+  ["Cadence", "cadence"],
+  ["Eye contact", "eyeContact"],
+  ["Filler words", "fillerWords"],
+  ["Intonation", "intonation"],
+];
+
+function ScoreChips({ scores }) {
+  return (
+    <ul className="log-scores">
+      {SCORE_LABELS.map(([label, field]) => {
+        const value = scores[field];
+        const tone = Number(value) >= 7 ? "is-strong" : "is-flag";
+        return (
+          <li key={field} className={`log-score ${tone}`}>
+            {label} {Number.isFinite(value) ? value : "—"}
+          </li>
+        );
+      })}
+      <li className="log-score">
+        Avg {Number.isFinite(scores.average) ? scores.average.toFixed(1) : "—"}
+      </li>
+    </ul>
   );
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 }
 
+ScoreChips.propTypes = {
+  scores: PropTypes.shape({
+    cadence: PropTypes.number,
+    eyeContact: PropTypes.number,
+    fillerWords: PropTypes.number,
+    intonation: PropTypes.number,
+    average: PropTypes.number,
+  }).isRequired,
+};
+
 const Logs = () => {
+  const demo = isDemoMode();
+  const demoRecords = useMemo(() => (demo ? demoScoreRecords(new Date()) : null), [demo]);
   const [videos, setVideos] = useState([]);
-  const [status, setStatus] = useState("loading");
+  const [status, setStatus] = useState(demo ? "ready" : "loading");
   const [brokenLinks, setBrokenLinks] = useState({});
 
   const getVideos = useCallback(async () => {
+    if (demo) return;
     setStatus("loading");
     try {
       const { data, error } = await supabase.from("videos").select("*");
@@ -46,11 +77,19 @@ const Logs = () => {
       setVideos([]);
       setStatus("error");
     }
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
     getVideos();
   }, [getVideos]);
+
+  const records = demoRecords ?? readScoreStore();
+  const sourceVideos = demo ? demoLogVideos(demoRecords) : status === "ready" ? videos : [];
+  const summary = summarizePractice({
+    videos: sourceVideos,
+    records: demo || status !== "loading" ? records : [],
+  });
+  const showSummary = demo || status !== "loading";
 
   return (
     <div className="logs-page">
@@ -58,6 +97,7 @@ const Logs = () => {
       <p className="logs-intro">
         Recordings you have saved from the practice page.
       </p>
+      {showSummary ? <PracticeSummary summary={summary} /> : null}
       {status === "loading" ? (
         <p className="status" role="status">
           Loading recordings…
@@ -74,7 +114,7 @@ const Logs = () => {
           </button>
         </div>
       ) : null}
-      {status === "ready" && videos.length === 0 ? (
+      {(demo || status === "ready") && summary.rows.length === 0 ? (
         <div className="page-message">
           <p>No recordings yet.</p>
           <Link to="/record" className="button">
@@ -83,13 +123,12 @@ const Logs = () => {
         </div>
       ) : null}
       <div className="logs-container">
-        {status === "ready"
-          ? videos.map((video, index) => {
-              const key = video.link || `${video.date}-${index}`;
-              return (
-                <article key={key} className="log-card">
-                  <h2>Date: {formatLogDate(video.date)}</h2>
-                  {brokenLinks[key] ? (
+        {demo || status === "ready"
+          ? summary.rows.map((video) => (
+              <article key={video.key} className="log-card">
+                <h2>Date: {formatLogDate(video.date)}</h2>
+                {video.link ? (
+                  brokenLinks[video.key] ? (
                     <p className="status status-error" role="alert">
                       This recording could not be played.
                     </p>
@@ -101,19 +140,25 @@ const Logs = () => {
                       onError={() =>
                         setBrokenLinks((current) => ({
                           ...current,
-                          [key]: true,
+                          [video.key]: true,
                         }))
                       }
                     >
                       <source src={video.link} type="video/webm" />
                     </video>
-                  )}
-                  <div className="log-notes">
-                    Notes: {video.notes?.trim() ? video.notes : "None"}
-                  </div>
-                </article>
-              );
-            })
+                  )
+                ) : (
+                  <p className="log-local-note">
+                    Scores for this take are saved on this device. Save the
+                    recording to store the video.
+                  </p>
+                )}
+                {video.scores ? <ScoreChips scores={video.scores} /> : null}
+                <div className="log-notes">
+                  Notes: {video.notes?.trim() ? video.notes : "None"}
+                </div>
+              </article>
+            ))
           : null}
       </div>
     </div>
