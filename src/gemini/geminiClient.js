@@ -11,6 +11,10 @@ export function createGeminiClient(action) {
   }
   return new GoogleGenAI({
     apiKey,
+    // Stay on the Gemini Developer API version this app was written and tested
+    // against. SDK 3.x defaults to v1, and some models and file-upload calls
+    // still exist only on v1beta.
+    apiVersion: "v1beta",
     httpOptions: {
       timeout: REQUEST_TIMEOUT_MS,
       retryOptions: {

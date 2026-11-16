@@ -1,3 +1,5 @@
+import { GEMINI_MODEL } from "./geminiEnv.js";
+
 /**
  * Raw bytes that still fit inline after base64 expands them under Gemini's
  * 20MB request limit. 10 MiB becomes about 14MB of base64, leaving room for
@@ -91,6 +93,10 @@ export function titleForKind(kind) {
       return "Upload failed";
     case "processing":
       return "Video still processing";
+    case "quota":
+      return "Gemini rate limit";
+    case "model_missing":
+      return "Gemini model not available";
     case "model":
       return "Gemini couldn't respond";
     default:
@@ -385,6 +391,20 @@ function extractMessage(error) {
     .join(" ");
 }
 
+/** The sentence Gemini returned, even when the SDK stuffed the JSON body into Error.message. */
+export function apiErrorText(message) {
+  const trimmed = typeof message === "string" ? message.trim() : "";
+  if (!trimmed.startsWith("{")) return trimmed;
+  try {
+    const body = JSON.parse(trimmed);
+    const text = body?.error?.message || body?.message;
+    if (typeof text === "string" && text.trim()) return text.trim();
+  } catch {
+    // The SDK sometimes prefixes the JSON. Fall through to the raw text.
+  }
+  return trimmed;
+}
+
 function isAuthFailure(message, status) {
   const lower = message.toLowerCase();
   if (status === 401) return true;
@@ -405,8 +425,9 @@ export function toCritiqueError(error) {
 
   const message = extractMessage(error);
   const status = geminiHttpStatus(error);
-  const detail = [status ? `HTTP ${status}` : "", message].filter(Boolean).join(" — ");
-  if (isAuthFailure(message, status)) {
+  const reason = apiErrorText(message);
+  const detail = [status ? `HTTP ${status}` : "", reason || message].filter(Boolean).join(" — ");
+  if (isAuthFailure(message, status) || isAuthFailure(reason, status)) {
     return new CritiqueError("auth", rejectedKeyMessage(), { detail });
   }
   if (/failed to fetch|networkerror|network error|econn|timed out|timeout|offline/i.test(message)) {
@@ -416,10 +437,51 @@ export function toCritiqueError(error) {
       { detail, retryable: true },
     );
   }
+  if (isModelNotFound(reason, status)) {
+    return new CritiqueError(
+      "model_missing",
+      `Gemini rejected the model "${GEMINI_MODEL}". ${reason || "The model was not found."} Check the model list in Google AI Studio.`,
+      { detail, retryable: false },
+    );
+  }
+  if (status === 429 || /resource_exhausted|rate limit|quota exceeded|too many requests/i.test(reason)) {
+    return new CritiqueError(
+      "quota",
+      `Gemini rate-limited this request${reason ? `: ${reason}` : "."} Free-tier projects have a small per-minute and daily quota. Check the rate limits in Google AI Studio, then try again.`,
+      { detail, retryable: true },
+    );
+  }
+  if (status === 400) {
+    return new CritiqueError(
+      "model",
+      reason
+        ? `Gemini rejected the request. ${reason}`
+        : modelMessage(),
+      { detail, retryable: false },
+    );
+  }
+  if (
+    [500, 502, 503, 504].includes(status) ||
+    /overloaded|unavailable|internal error/i.test(reason)
+  ) {
+    return new CritiqueError(
+      "model",
+      `Gemini is temporarily unavailable${reason ? `: ${reason}` : "."} Try again in a minute.`,
+      { detail, retryable: true },
+    );
+  }
   return new CritiqueError("model", modelMessage(), {
     detail,
     retryable: isRetryableGeminiError(error),
   });
+}
+
+function isModelNotFound(reason, status) {
+  const lower = reason.toLowerCase();
+  if (/models\/[a-z0-9]/.test(lower) || /unknown model|unsupported model/.test(lower)) {
+    return true;
+  }
+  return status === 404 && /\bmodel\b/.test(lower) && !/\bfile\b/.test(lower);
 }
 
 export function mockCritique(question) {

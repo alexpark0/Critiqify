@@ -55,15 +55,11 @@ const SampleQuestion = ({
       setStatus("ready");
     } catch (caught) {
       const parsed = toCritiqueError(caught);
-      if (parsed.kind === "model") {
-        setError({
-          kind: "model",
-          message:
-            "Couldn't generate a question. The AI service may be unavailable.",
-        });
-      } else {
-        setError(parsed);
+      if (parsed.kind === "aborted") {
+        setStatus("idle");
+        return;
       }
+      setError(parsed);
       setStatus("error");
     }
   }
@@ -87,7 +83,9 @@ const SampleQuestion = ({
           Asking for a practice question…
         </p>
       ) : null}
-      {error ? <GeminiAlert kind={error.kind} message={error.message} /> : null}
+      {error ? (
+        <GeminiAlert kind={error.kind} message={error.message} detail={error.detail} />
+      ) : null}
       <p className={prompt.hasQuestion ? "teleprompter-question" : "teleprompter-question is-placeholder"}>
         {prompt.question}
       </p>

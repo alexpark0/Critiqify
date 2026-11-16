@@ -186,6 +186,7 @@ test("inline clips retry a truncated JSON reply, then accept the next one", asyn
     const inline = request.contents[0].parts[0].inlineData;
     assert.equal(inline.mimeType, "video/webm");
     assert.ok(inline.data.length > 100);
+    assert.equal(request.contents[0].parts[0].mediaProcessing, "STATIC");
     assert.equal(request.generationConfig.maxOutputTokens, 16384);
     assert.equal(request.generationConfig.thinkingConfig.thinkingLevel, "LOW");
     assert.equal(request.generationConfig.responseMimeType, "application/json");
@@ -238,6 +239,7 @@ test("Files API grading waits until the upload is ACTIVE", async () => {
       const fileData = request.contents[0].parts[0].fileData;
       assert.equal(fileData.fileUri, FILE_URI);
       assert.equal(fileData.mimeType, "video/webm");
+      assert.equal(request.contents[0].parts[0].mediaProcessing, "STATIC");
       assert.equal(request.generationConfig.thinkingConfig.thinkingLevel, "LOW");
       return jsonResponse(200, generateBody({ text: validCritiqueText() }));
     }
@@ -378,6 +380,7 @@ test("a non-retryable 400 keeps the API message for the error details", async ()
         }),
       (error) => {
         assert.equal(error.retryable, false);
+        assert.match(error.message, /invalid argument/i);
         assert.match(error.detail, /HTTP 400/);
         assert.match(error.detail, /invalid argument/i);
         return true;
