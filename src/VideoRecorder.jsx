@@ -8,7 +8,8 @@ import SampleQuestion from "./gemini/SampleQuestion.jsx";
 import RecordedPlayer from "./playback/RecordedPlayer.jsx";
 
 const supabaseUrl = "https://dciyttpbryiswtotblbz.supabase.co";
-const supabaseKey = "sb_publishable_mWYgc6UT2RSMdpQc8L193A_svC6fGND";
+const supabaseKey =
+  "sb_publishable_mWYgc6UT2RSMdpQc8L193A_svC6fGND";
 const supabase = createClient(supabaseUrl, supabaseKey);
 const mimeType = "video/webm";
 
