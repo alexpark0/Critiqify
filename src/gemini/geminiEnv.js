@@ -6,12 +6,25 @@
  */
 export const GEMINI_MODEL = "gemini-3.8-flash";
 
-function readEnv(name) {
-  const viteEnv = import.meta.env;
-  if (viteEnv && typeof viteEnv === "object") {
-    const value = viteEnv[name];
-    if (typeof value === "string" && value.trim()) return value.trim();
+function viteValue(name) {
+  // Name the keys statically. `import.meta.env` as a whole object makes Vite
+  // inline every VITE_ variable, which would put the Jev key in the bundle.
+  try {
+    const value =
+      name === "VITE_API_KEY"
+        ? import.meta.env.VITE_API_KEY
+        : name === "VITE_MOCK_GEMINI"
+          ? import.meta.env.VITE_MOCK_GEMINI
+          : "";
+    return typeof value === "string" ? value.trim() : "";
+  } catch {
+    return "";
   }
+}
+
+function readEnv(name) {
+  const fromVite = viteValue(name);
+  if (fromVite) return fromVite;
   const nodeProcess = globalThis.process;
   if (nodeProcess?.env && typeof nodeProcess.env[name] === "string") {
     return nodeProcess.env[name].trim();

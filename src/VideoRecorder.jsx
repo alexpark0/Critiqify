@@ -6,6 +6,7 @@ import { DEMO_VIDEO_SRC } from "./demo/demoMode.js";
 import { normalizeVideoMimeType } from "./gemini/critiqueFormat.js";
 import SampleQuestion from "./gemini/SampleQuestion.jsx";
 import RecordedPlayer from "./playback/RecordedPlayer.jsx";
+import { attachSpeechRecognition, speechRecognitionCtor } from "./speech/liveTranscript.js";
 
 const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
 const supabaseKey =
@@ -70,8 +71,63 @@ const VideoRecorder = forwardRef(function VideoRecorder(
   const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const requestingRef = useRef(false);
   const mountedRef = useRef(true);
+  const cuesRef = useRef([]);
+  const recognizerRef = useRef(null);
+  const captionNoteRef = useRef("");
+  const [captionNote, setCaptionNote] = useState("");
+  const [liveCaption, setLiveCaption] = useState("");
   const onReadyRef = useRef(onRecordingReady);
   onReadyRef.current = onRecordingReady;
+
+  const setCaption = (note) => {
+    captionNoteRef.current = note;
+    if (mountedRef.current) setCaptionNote(note);
+  };
+
+  const stopCaptions = () => {
+    const session = recognizerRef.current;
+    recognizerRef.current = null;
+    session?.stop();
+  };
+
+  const startCaptions = () => {
+    stopCaptions();
+    cuesRef.current = [];
+    if (mountedRef.current) setLiveCaption("");
+    setCaption("");
+    const Recognition = speechRecognitionCtor(window);
+    if (!Recognition) {
+      setCaption(
+        "This browser can't transcribe while you record. Jev needs the words, so use Chrome or Edge to get grades.",
+      );
+      return;
+    }
+    let recognition;
+    try {
+      recognition = new Recognition();
+    } catch {
+      setCaption(
+        "Live transcription couldn't start in this browser. Jev needs a transcript to grade this take.",
+      );
+      return;
+    }
+    const session = attachSpeechRecognition(recognition, {
+      onCue: (cue) => {
+        cuesRef.current.push(cue);
+        if (mountedRef.current) setLiveCaption(cue.text);
+      },
+      onStatus: (note) => setCaption(note),
+      shouldRestart: () => recorderRef.current?.state === "recording",
+    });
+    try {
+      session.start();
+      recognizerRef.current = session;
+    } catch {
+      setCaption(
+        "Live transcription couldn't start in this browser. Jev needs a transcript to grade this take.",
+      );
+    }
+  };
 
   useEffect(() => {
     const video = liveVideoRef.current;
@@ -85,6 +141,7 @@ const VideoRecorder = forwardRef(function VideoRecorder(
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      recognizerRef.current?.stop();
       const recorder = recorderRef.current;
       if (recorder && recorder.state !== "inactive") recorder.stop();
       stopStream(streamRef.current);
@@ -238,20 +295,36 @@ const VideoRecorder = forwardRef(function VideoRecorder(
         setRecordedVideo(videoUrl);
         setVideoFile(file);
         setDate(stamp);
-        onRecordingReady?.(file, { id: stamp });
+        const transcript = cuesRef.current.slice();
+        if (transcript.length > 0) {
+          setCaption("");
+          onRecordingReady?.(file, { id: stamp, transcript, transcriptNote: "" });
+        } else {
+          if (!captionNoteRef.current) {
+            setCaption(
+              "No speech was captured. Jev grades the words, so record again and speak after you press Start.",
+            );
+          }
+          onRecordingReady?.(file, {
+            id: stamp,
+            transcript,
+            transcriptNote: captionNoteRef.current,
+          });
+        }
       };
       media.ondataavailable = (event) => {
         if (!event.data || event.data.size === 0) return;
         chunksRef.current.push(event.data);
       };
       media.onstop = () => {
-        // The last chunk can arrive after `stop` in some browsers. Wait so the
-        // blob Gemini receives is the full recording, not a partial one.
+        // The last video chunk and the last caption can arrive after stop.
+        stopCaptions();
         window.setTimeout(() => {
           settleRecording();
-        }, 250);
+        }, 500);
       };
       media.start(1000);
+      startCaptions();
       setRecordingStatus("recording");
     } catch {
       setRecordingStatus("inactive");
@@ -379,6 +452,17 @@ const VideoRecorder = forwardRef(function VideoRecorder(
           </button>
         ) : null}
       </div>
+      {captionNote ? (
+        <p className="status status-error" role="status">
+          {captionNote}
+        </p>
+      ) : recordingStatus === "recording" ? (
+        <p className="status" role="status">
+          {liveCaption
+            ? `Hearing: ${liveCaption}`
+            : "Listening for a transcript Jev can grade…"}
+        </p>
+      ) : null}
 
       {recordedVideo ? (
         <div className="recorded-player">

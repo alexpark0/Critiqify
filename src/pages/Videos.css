@@ -167,6 +167,11 @@
   background: #E4A499;
 }
 
+.log-score.is-unavailable {
+  color: #6E524C;
+  background: #E8E6E0;
+}
+
 .log-local-note {
   margin: 12px 0 0;
   color: #6E524C;

@@ -95,8 +95,45 @@ test("response schema requires the four critique categories", () => {
   ]);
 });
 
+function gradedFixture(question = "How would you debug a slow endpoint?") {
+  return {
+    summary: "The close is clear, and the middle rushes.",
+    addressedQuestion: question ? `You answered ${question}.` : "",
+    categories: [
+      {
+        name: "Cadence (pacing)",
+        grade: "B",
+        score: 7,
+        explanation: "You rush from 0:11 to 0:19.",
+        tips: ["Pause after the problem.", "Land the last sentence."],
+      },
+      {
+        name: "Eye contact",
+        grade: "C",
+        score: 6,
+        explanation: "Your eyes drop around 0:22.",
+        tips: ["Return to the lens."],
+      },
+      {
+        name: "Filler words",
+        grade: "C",
+        score: 5,
+        explanation: "There is an um at the start.",
+        tips: ["Start on the first real word."],
+      },
+      {
+        name: "Intonation",
+        grade: "B",
+        score: 8,
+        explanation: "Your voice lifts near 0:31.",
+        tips: ["Stress the outcome word."],
+      },
+    ],
+  };
+}
+
 test("parseCritique accepts JSON, fences, and a shuffled category list", () => {
-  const critique = mockCritique("How would you debug a slow endpoint?");
+  const critique = gradedFixture();
   const shuffled = {
     ...critique,
     categories: [...critique.categories].reverse(),
@@ -111,7 +148,7 @@ test("parseCritique accepts JSON, fences, and a shuffled category list", () => {
 });
 
 test("parseCritique rejects a response that drops a category", () => {
-  const critique = mockCritique("");
+  const critique = gradedFixture("");
   critique.categories = critique.categories.slice(0, 3);
   assert.throws(() => parseCritique(critique), (error) => {
     assert.equal(error instanceof CritiqueError, true);
@@ -120,10 +157,15 @@ test("parseCritique rejects a response that drops a category", () => {
   });
 });
 
-test("mock critique without a question leaves addressedQuestion empty", () => {
+test("mock critique leaves eye contact and intonation ungraded", () => {
   const critique = mockCritique("");
   assert.equal(critique.addressedQuestion, "");
   assert.equal(critique.categories.length, 4);
+  assert.equal(critique.categories[0].score, 7);
+  assert.equal(critique.categories[1].unavailable, true);
+  assert.equal(critique.categories[1].score, null);
+  assert.equal(critique.categories[3].unavailable, true);
+  assert.match(critique.categories[1].explanation, /transcript/);
 });
 
 test("mock chat reply stays on this recording and the critique", () => {
@@ -206,7 +248,7 @@ test("readGenerateResult treats a cut-off reply as retryable and a safety block 
 });
 
 test("parseCritique rounds a decimal score and accepts a grade suffix or a single tip", () => {
-  const source = mockCritique("Tell me about a bug.");
+  const source = gradedFixture("Tell me about a bug.");
   source.categories[0] = {
     ...source.categories[0],
     grade: "B+",
@@ -220,7 +262,7 @@ test("parseCritique rounds a decimal score and accepts a grade suffix or a singl
 });
 
 test("parseCritique reads a JSON object surrounded by extra text", () => {
-  const critique = mockCritique("How would you debug a slow endpoint?");
+  const critique = gradedFixture();
   const wrapped = `Here is the critique:\n${JSON.stringify(critique)}\nDone.`;
   const parsed = parseCritique(wrapped);
   assert.equal(parsed.categories.length, 4);

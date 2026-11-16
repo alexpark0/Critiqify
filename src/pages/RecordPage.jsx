@@ -10,6 +10,8 @@ const RecordPage = () => {
   const demo = isDemoMode();
   const [question, setQuestion] = useState(demo ? DEMO_QUESTION : "");
   const [videoFile, setVideoFile] = useState(null);
+  const [transcript, setTranscript] = useState([]);
+  const [transcriptNote, setTranscriptNote] = useState("");
   const [recordingId, setRecordingId] = useState("");
   const [critique, setCritique] = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -18,6 +20,8 @@ const RecordPage = () => {
 
   const handleRecordingReady = useCallback((file, meta) => {
     setVideoFile(file);
+    setTranscript(Array.isArray(meta?.transcript) ? meta.transcript : []);
+    setTranscriptNote(typeof meta?.transcriptNote === "string" ? meta.transcriptNote : "");
     setRecordingId(meta?.id || "");
     setCritique(null);
     setActiveCategory("all");
@@ -41,8 +45,8 @@ const RecordPage = () => {
     <div className="record-page">
       <h1>Record a Presentation</h1>
       <p className="record-intro">
-        Practice an interview question, record your answer, and get a graded
-        critique of how you delivered it.
+        Practice an interview question and record your answer. Jev grades
+        cadence and filler words from a live transcript.
       </p>
       <div className="record-stage">
         <section className="panel recorder-panel" aria-labelledby="recorder-heading">
@@ -60,6 +64,9 @@ const RecordPage = () => {
         <VideoCritique
           videoFile={videoFile}
           question={question}
+          transcript={transcript}
+          transcriptNote={transcriptNote}
+          demo={demo}
           activeCategory={activeCategory}
           onCategoryFilter={setActiveCategory}
           onCritique={handleCritique}

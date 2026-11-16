@@ -30,7 +30,8 @@ function ScoreChips({ scores }) {
     <ul className="log-scores">
       {SCORE_LABELS.map(([label, field]) => {
         const value = scores[field];
-        const tone = Number(value) >= 7 ? "is-strong" : "is-flag";
+        const finite = Number.isFinite(value);
+        const tone = !finite ? "is-unavailable" : Number(value) >= 7 ? "is-strong" : "is-flag";
         return (
           <li key={field} className={`log-score ${tone}`}>
             {label} {Number.isFinite(value) ? value : "—"}

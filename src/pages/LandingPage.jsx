@@ -13,7 +13,7 @@ const steps = [
   },
   {
     title: "Get your graded critique",
-    body: "See cadence, eye contact, filler words, and intonation, with notes on specific moments.",
+    body: "Jev grades cadence and filler words from the transcript, with notes on specific moments. Eye contact and intonation stay blank.",
   },
   {
     title: "Chat with the AI",

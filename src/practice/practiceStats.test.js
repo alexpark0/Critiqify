@@ -25,7 +25,9 @@ function memoryStorage() {
 test("critique scores persist locally and merge onto saved logs by id or url", () => {
   const storage = memoryStorage();
   const scores = scoresFromCritique(mockCritique(""));
-  assert.equal(scores.average, 6.5);
+  assert.equal(scores.average, 6);
+  assert.equal(scores.eyeContact, null);
+  assert.equal(scores.intonation, null);
   upsertPracticeScore(
     { id: "10-26-2026-09.15.00", scores, practicedAt: "2026-10-26T13:15:00.000Z" },
     storage,
@@ -38,7 +40,8 @@ test("critique scores persist locally and merge onto saved logs by id or url", (
   assert.equal(saved.length, 1);
   assert.equal(saved[0].url, "https://cdn.example/takes/a.webm");
   assert.equal(saved[0].scores.cadence, 7);
-  assert.equal(saved[0].scores.eyeContact, 6);
+  assert.equal(saved[0].scores.fillerWords, 5);
+  assert.equal(saved[0].scores.eyeContact, null);
 
   const rows = mergePracticeLogs(
     [{ date: "10-2-2026-08.00.00", link: "https://cdn.example/takes/b.webm", notes: "Earlier" }],
@@ -58,7 +61,7 @@ test("critique scores persist locally and merge onto saved logs by id or url", (
     [{ date: "", link: "https://cdn.example/takes/a.webm", notes: "" }],
     saved,
   );
-  assert.equal(byUrl[0].scores.average, 6.5);
+  assert.equal(byUrl[0].scores.average, 6);
   assert.equal(readScoreStore({ getItem: () => "{", setItem() {} }).length, 0);
 });
 

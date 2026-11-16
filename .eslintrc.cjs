@@ -18,4 +18,15 @@ module.exports = {
       { allowConstantExport: true },
     ],
   },
+  overrides: [
+    {
+      files: [
+        "vite.config.js",
+        "netlify/**/*.js",
+        "src/jev/devProxy.js",
+        "src/jev/proxyHandler.js",
+      ],
+      env: { node: true },
+    },
+  ],
 };

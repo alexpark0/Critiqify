@@ -1,3 +1,5 @@
+import { EYE_CONTACT_UNAVAILABLE, INTONATION_UNAVAILABLE } from "../jev/rubric.js";
+
 /**
  * Raw bytes that still fit inline after base64 expands them under Gemini's
  * 20MB request limit. 10 MiB becomes about 14MB of base64, leaving room for
@@ -87,6 +89,14 @@ export function titleForKind(kind) {
       return "Gemini API key needed";
     case "auth":
       return "Gemini rejected the API key";
+    case "missing_jev_key":
+      return "Jev API key needed";
+    case "jev_auth":
+      return "Jev rejected the API key";
+    case "transcript":
+      return "Transcript needed";
+    case "jev":
+      return "Jev couldn't grade this take";
     case "upload":
       return "Upload failed";
     case "processing":
@@ -424,17 +434,19 @@ export function toCritiqueError(error) {
 
 export function mockCritique(question) {
   const trimmed = typeof question === "string" ? question.trim() : "";
-  return parseCritique({
+  return {
     summary:
-      "You answer in a clear arc and sound engaged at the end, but the middle speeds up and picks up fillers while your eyes leave the camera. Tightening the pace and bringing your gaze back would make this feel more confident.",
+      "Preview grades only: cadence and filler words are filled in so you can try the scrubber. Eye contact and intonation stay blank, because a transcript has no picture or pitch. A live take sends the transcript to Jev.",
     addressedQuestion: trimmed
-      ? `You mostly answered “${trimmed}”. The example is specific, but you never say what you would do differently, which the question asks for.`
+      ? `This preview does not ask Jev. On a live take, Jev would estimate whether the transcript addresses “${trimmed}”.`
       : "",
+    transcriptText: "[0:08] um I checked the logs\n[0:11] then I rushed the fix\n[0:34] and the close was steady",
     categories: [
       {
         name: "Cadence (pacing)",
         grade: "B",
         score: 7,
+        unavailable: false,
         explanation:
           "You start steady, then rush from about 0:11 to 0:19 when you describe the fix. The close at 0:34 slows back down and is easier to follow.",
         tips: [
@@ -444,40 +456,34 @@ export function mockCritique(question) {
       },
       {
         name: "Eye contact",
-        grade: "C",
-        score: 6,
-        explanation:
-          "You look into the camera through the opening. Around 0:22 your eyes drop to the bottom of the frame and stay there through the example.",
-        tips: [
-          "Set the lens at eye level so looking at the camera doesn't feel like looking up.",
-          "Glance away to think, then return to the lens before the next sentence.",
-        ],
+        grade: "",
+        score: null,
+        unavailable: true,
+        explanation: EYE_CONTACT_UNAVAILABLE,
+        tips: [],
       },
       {
         name: "Filler words",
         grade: "C",
         score: 5,
+        unavailable: false,
         explanation:
-          'There is an "um" at the start, a "like" around 0:08, and a string of "uh" between 0:24 and 0:29 while you search for the result.',
+          'There is an "um" at 0:08, and a string of "uh" between 0:24 and 0:29 while you search for the result.',
         tips: [
           "Replace the opening filler with a silent breath, then start on the first real word.",
           "If you need a moment, say nothing instead of filling it with uh.",
-          "Jot three beats before you record so the middle of the story has a path.",
         ],
       },
       {
         name: "Intonation",
-        grade: "B",
-        score: 8,
-        explanation:
-          "Your voice lifts on the result around 0:31, which sounds engaged. The middle stays flat, especially the sentence that starts near 0:16.",
-        tips: [
-          "Stress the outcome word so the listener can hear what mattered.",
-          "Let the last sentence fall at the end so the answer sounds finished.",
-        ],
+        grade: "",
+        score: null,
+        unavailable: true,
+        explanation: INTONATION_UNAVAILABLE,
+        tips: [],
       },
     ],
-  });
+  };
 }
 
 export function mockChatReply(message, critique) {
@@ -486,5 +492,5 @@ export function mockChatReply(message, critique) {
     (item) => item.name === "Cadence (pacing)",
   );
   const moment = cadence?.explanation ?? "the pacing notes in your critique";
-  return `On this recording, ${moment} For “${prompt}”, use the critique you already have: slow the rush around 0:11, bring your eyes back to the lens after 0:22, and swap the “uh” stretch from 0:24 to 0:29 for a short pause. I can walk through any of the four grades in more detail.`;
+  return `On this recording, ${moment} For “${prompt}”, use the critique you already have. Eye contact and intonation are not graded from a transcript. I can walk through the cadence and filler-word grades.`;
 }

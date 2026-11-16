@@ -1,10 +1,21 @@
 import { titleForKind } from "./critiqueFormat.js";
+import { JEV_KEY_URL } from "../jev/messages.js";
 import PropTypes from "prop-types";
 
-const KEY_URL = "https://aistudio.google.com/apikey";
+const GEMINI_KEY_URL = "https://aistudio.google.com/apikey";
+
+function keyHelp(kind) {
+  if (kind === "missing_jev_key" || kind === "jev_auth") {
+    return { href: JEV_KEY_URL, label: "Get a Jev API key" };
+  }
+  if (kind === "missing_key" || kind === "auth") {
+    return { href: GEMINI_KEY_URL, label: "Get a Gemini API key" };
+  }
+  return null;
+}
 
 const GeminiAlert = ({ kind, message, detail = "", onRetry, retryLabel = "Try again" }) => {
-  const needsKey = kind === "missing_key" || kind === "auth";
+  const help = keyHelp(kind);
 
   return (
     <div className="status status-error gemini-alert" role="alert">
@@ -16,10 +27,10 @@ const GeminiAlert = ({ kind, message, detail = "", onRetry, retryLabel = "Try ag
           <pre>{detail}</pre>
         </details>
       ) : null}
-      {needsKey ? (
+      {help ? (
         <p>
-          <a href={KEY_URL} target="_blank" rel="noopener noreferrer">
-            Get a Gemini API key
+          <a href={help.href} target="_blank" rel="noopener noreferrer">
+            {help.label}
           </a>
         </p>
       ) : null}

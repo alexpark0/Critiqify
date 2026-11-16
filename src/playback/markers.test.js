@@ -19,25 +19,24 @@ test("extractTimelineMarkers plots category timestamps and colors them by score"
     [
       ["0:08", "Filler words", "flag", ""],
       ["0:11", "Cadence", "strong", ""],
-      ["0:16", "Intonation", "strong", ""],
       ["0:19", "Cadence", "strong", ""],
-      ["0:22", "Eye contact", "flag", ""],
       ["0:24", "Filler words", "flag", ""],
       ["0:29", "Filler words", "flag", ""],
-      ["0:31", "Intonation", "strong", ""],
       ["0:34", "Cadence", "strong", ""],
     ],
   );
   assert.equal(markers.find((marker) => marker.label === "Cadence").tone, "strong");
-  assert.equal(markers.find((marker) => marker.label === "Eye contact").tone, "flag");
+  assert.equal(markers.some((marker) => marker.label === "Eye contact"), false);
+  assert.equal(markers.some((marker) => marker.label === "Intonation"), false);
 });
 
 test("filterTimelineMarkers keeps one category and can return to all", () => {
   const markers = extractTimelineMarkers(mockCritique(""));
-  const eyes = filterTimelineMarkers(markers, "Eye contact");
-  assert.deepEqual(eyes.map((marker) => marker.timestamp), ["0:22"]);
+  const fillers = filterTimelineMarkers(markers, "Filler words");
+  assert.deepEqual(fillers.map((marker) => marker.timestamp), ["0:08", "0:24", "0:29"]);
   const cadence = filterTimelineMarkers(markers, "Cadence (pacing)");
   assert.equal(cadence.length, 3);
+  assert.equal(filterTimelineMarkers(markers, "Eye contact").length, 0);
   assert.equal(filterTimelineMarkers(markers, "all").length, markers.length);
 
   assert.equal(toggleCategoryFilter("all", "Eye contact"), "Eye contact");

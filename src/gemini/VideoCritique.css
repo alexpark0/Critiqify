@@ -217,6 +217,18 @@ button.category-name {
   color: #5A322A;
 }
 
+.grade-badge.is-unavailable {
+  background: #E8E6E0;
+  color: #6E524C;
+}
+
+.transcript-block {
+  margin: 0;
+  white-space: pre-wrap;
+  font: inherit;
+  color: #5A322A;
+}
+
 .score-value {
   color: #5A322A;
   font-size: 0.95rem;

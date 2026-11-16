@@ -15,10 +15,8 @@ import "./VideoCritique.css";
 
 const PHASE_COPY = {
   prepare: "Preparing your recording…",
-  upload: "Uploading this recording to Gemini…",
-  process: "Processing your video…",
-  grade: "Grading cadence, eye contact, filler words, and intonation…",
-  retry: "Gemini's first answer couldn't be read. Trying again…",
+  grade: "Grading cadence and filler words with Jev…",
+  retry: "Jev's answer couldn't be read. Trying again…",
 };
 
 function nextMessageId() {
@@ -28,6 +26,9 @@ function nextMessageId() {
 const VideoCritique = ({
   videoFile,
   question,
+  transcript = [],
+  transcriptNote = "",
+  demo = false,
   onSeek,
   activeCategory = "all",
   onCategoryFilter,
@@ -84,6 +85,9 @@ const VideoCritique = ({
     startCritiqueSession({
       videoFile,
       question,
+      transcript,
+      transcriptNote,
+      demo,
       signal: controller.signal,
       onProgress: (nextPhase) => {
         if (generationRef.current !== generation) return;
@@ -108,7 +112,7 @@ const VideoCritique = ({
       generationRef.current += 1;
       controller.abort();
     };
-  }, [videoFile, question, retryCount]);
+  }, [videoFile, question, transcript, transcriptNote, demo, retryCount]);
 
   useEffect(() => {
     if (status === "ready" && critique) onCritique?.(critique);
@@ -235,8 +239,8 @@ const VideoCritique = ({
       >
         {status === "empty" ? (
           <p className="status critique-empty">
-            Record your answer to get grades for cadence, eye contact, filler
-            words, and intonation.
+            Record your answer to grade cadence and filler words. Eye contact
+            and intonation need the video, so they stay unavailable.
           </p>
         ) : null}
 
@@ -251,7 +255,11 @@ const VideoCritique = ({
             kind={error.kind}
             message={error.message}
             detail={error.detail}
-            onRetry={() => setRetryCount((count) => count + 1)}
+            onRetry={
+              error.kind === "transcript"
+                ? undefined
+                : () => setRetryCount((count) => count + 1)
+            }
           />
         ) : null}
 
@@ -271,6 +279,12 @@ const VideoCritique = ({
                 </p>
               </div>
             ) : null}
+            {critique.transcriptText ? (
+              <div className="summary-block">
+                <h3>Transcript</h3>
+                <pre className="transcript-block">{critique.transcriptText}</pre>
+              </div>
+            ) : null}
             <div className="filter-pills" role="group" aria-label="Filter timeline by category">
               {CATEGORY_FILTERS.map((filter) => (
                 <button
@@ -286,8 +300,8 @@ const VideoCritique = ({
             <p className="filter-status">{filterLabel}</p>
             <div className="category-list">
               {critique.categories.map((category) => {
-                const meter = scoreMeterModel(category.score);
                 const active = activeCategory === category.name;
+                const meter = category.unavailable ? null : scoreMeterModel(category.score);
                 return (
                   <article
                     className={active ? "category-card is-active" : "category-card"}
@@ -302,33 +316,45 @@ const VideoCritique = ({
                       >
                         {categoryLabel(category.name)}
                       </button>
-                      <div
-                        className={`score-meter is-${meter.tone}`}
-                        role="meter"
-                        aria-valuemin={0}
-                        aria-valuemax={10}
-                        aria-valuenow={meter.value}
-                        aria-valuetext={`${meter.value} out of 10`}
-                        aria-label={`${categoryLabel(category.name)} score`}
-                      >
-                        <span className="score-meter-fill" style={{ width: meter.width }} />
-                      </div>
+                      {meter ? (
+                        <div
+                          className={`score-meter is-${meter.tone}`}
+                          role="meter"
+                          aria-valuemin={0}
+                          aria-valuemax={10}
+                          aria-valuenow={meter.value}
+                          aria-valuetext={`${meter.value} out of 10`}
+                          aria-label={`${categoryLabel(category.name)} score`}
+                        >
+                          <span className="score-meter-fill" style={{ width: meter.width }} />
+                        </div>
+                      ) : null}
                       <p className="category-score">
-                        <span className={`grade-badge is-${meter.tone}`}>{category.grade}</span>
-                        <span className={`score-value is-${meter.tone}`}>{category.score}/10</span>
+                        {category.unavailable ? (
+                          <span className="grade-badge is-unavailable">Not graded</span>
+                        ) : (
+                          <>
+                            <span className={`grade-badge is-${meter.tone}`}>{category.grade}</span>
+                            <span className={`score-value is-${meter.tone}`}>{category.score}/10</span>
+                          </>
+                        )}
                       </p>
                     </div>
                     <p>
                       <TimestampText text={category.explanation} onSeek={onSeek} />
                     </p>
-                    <p className="tips-label">Try this</p>
-                    <ul className="tips">
-                      {category.tips.map((tip, index) => (
-                        <li key={`${category.name}-${index}`}>
-                          <TimestampText text={tip} onSeek={onSeek} />
-                        </li>
-                      ))}
-                    </ul>
+                    {category.tips?.length ? (
+                      <>
+                        <p className="tips-label">Try this</p>
+                        <ul className="tips">
+                          {category.tips.map((tip, index) => (
+                            <li key={`${category.name}-${index}`}>
+                              <TimestampText text={tip} onSeek={onSeek} />
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
                   </article>
                 );
               })}
@@ -354,8 +380,8 @@ const VideoCritique = ({
             <p className="status">Chat unlocks after your critique is ready.</p>
           ) : messages.length === 0 ? (
             <p className="status">
-              Ask a follow-up about this recording. The conversation already
-              includes the video and the critique.
+              Ask a follow-up about this take. The coach can see the transcript
+              and the grades. It cannot see eye contact or hear intonation.
             </p>
           ) : null}
           {messages.length > 0 || chatStatus === "sending" ? (
@@ -377,7 +403,7 @@ const VideoCritique = ({
                   }
                 >
                   <span className="chat-role">
-                    {message.role === "user" ? "You" : "Gemini"}
+                    {message.role === "user" ? "You" : "Coach"}
                   </span>
                   <p>
                     <TimestampText text={message.text} onSeek={onSeek} />
@@ -386,7 +412,7 @@ const VideoCritique = ({
               ))}
               {chatStatus === "sending" ? (
                 <li className="chat-bubble is-model" aria-busy="true">
-                  <span className="chat-role">Gemini</span>
+                  <span className="chat-role">Coach</span>
                   <p>Thinking…</p>
                 </li>
               ) : null}
@@ -444,6 +470,9 @@ export default VideoCritique;
 VideoCritique.propTypes = {
   videoFile: PropTypes.object,
   question: PropTypes.string,
+  transcript: PropTypes.array,
+  transcriptNote: PropTypes.string,
+  demo: PropTypes.bool,
   onSeek: PropTypes.func,
   activeCategory: PropTypes.string,
   onCategoryFilter: PropTypes.func,

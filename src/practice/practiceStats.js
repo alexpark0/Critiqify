@@ -65,7 +65,12 @@ export function scoresFromCritique(critique) {
   };
   for (const [name, field] of CATEGORY_FIELDS) {
     const match = categories.find((category) => category?.name === name);
-    const value = Number(match?.score);
+    const raw = match?.score;
+    if (raw == null || raw === "") {
+      scores[field] = null;
+      continue;
+    }
+    const value = typeof raw === "number" ? raw : Number(String(raw).trim());
     scores[field] = Number.isFinite(value) ? value : null;
   }
   const values = CATEGORY_FIELDS.map(([, field]) => scores[field]).filter((value) =>
