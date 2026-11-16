@@ -13,9 +13,9 @@ import {
   summarizePractice,
 } from "../practice/practiceStats.js";
 
-const supabaseUrl = "https://hngxaylgylmtakwbxzss.supabase.co";
+const supabaseUrl = "https://dciyttpbryiswtotblbz.supabase.co";
 const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZ3hheWxneWxtdGFrd2J4enNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1NDQ4ODksImV4cCI6MjA1MjEyMDg4OX0.PfvbMIX6IByuf6kTWQgykjwHta6IdDmBioy-xJhTTJQ";
+  "sb_publishable_mWYgc6UT2RSMdpQc8L193A_svC6fGND";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const SCORE_LABELS = [
