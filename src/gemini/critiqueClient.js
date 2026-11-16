@@ -345,8 +345,8 @@ function gradeConfig(signal) {
     responseSchema: critiqueResponseSchema,
     temperature: 0.4,
     maxOutputTokens: OUTPUT_TOKEN_LIMIT,
-    // gemini-3.8-flash thinks at medium by default, and those tokens count
-    // against maxOutputTokens. Low keeps the JSON from being cut off.
+    // Flash-Lite thinks by default, and those tokens count against
+    // maxOutputTokens. Low keeps the JSON from being cut off.
     thinkingConfig: { thinkingLevel: "LOW" },
     abortSignal: signal,
   };

@@ -164,7 +164,7 @@ test("toCritiqueError distinguishes a bad key, an abort, and a model failure", (
         JSON.stringify({
           error: {
             code: 404,
-            message: "models/gemini-3.8-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models.",
+            message: "models/gemini-3.5-flash-lite is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models.",
             status: "NOT_FOUND",
           },
         }),
@@ -174,7 +174,7 @@ test("toCritiqueError distinguishes a bad key, an abort, and a model failure", (
   );
   assert.equal(missingModel.kind, "model_missing");
   assert.equal(missingModel.retryable, false);
-  assert.match(missingModel.message, /gemini-3\.8-flash/);
+  assert.match(missingModel.message, /gemini-3\.5-flash-lite/);
   assert.match(missingModel.message, /not found/);
   assert.match(missingModel.detail, /HTTP 404/);
 
