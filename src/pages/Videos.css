@@ -173,6 +173,90 @@
   font-size: 0.92rem;
 }
 
+.log-banner {
+  width: min(640px, 100%);
+  margin-bottom: 8px;
+}
+
+.log-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.log-card .log-edit .field {
+  width: 100%;
+  margin: 0;
+}
+
+.log-card .log-edit textarea {
+  min-height: 88px;
+}
+
+.log-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.log-edit .log-actions,
+.log-confirm .log-actions {
+  margin-top: 0;
+}
+
+.log-actions button {
+  white-space: nowrap;
+}
+
+.log-card .button-quiet {
+  background: transparent;
+  color: #5A322A;
+  border-color: #B8B9B2;
+}
+
+.log-card .button-quiet:hover {
+  background: #E8E6E0;
+  border-color: #5A322A;
+  color: #5A322A;
+}
+
+.log-card .button-danger {
+  background: #5A322A;
+  color: #FFFFFF;
+  border-color: #5A322A;
+}
+
+.log-card .button-danger:hover {
+  background: #3F221C;
+  border-color: #3F221C;
+  color: #FFFFFF;
+}
+
+.log-confirm {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 12px 14px;
+  text-align: left;
+  background: rgba(228, 164, 153, 0.45);
+  border: 1px solid #BC7B6F;
+  border-radius: 12px;
+}
+
+.log-confirm p {
+  margin: 0 0 10px;
+  color: #5A322A;
+}
+
+.log-card .status {
+  margin: 12px 0 0;
+  max-width: none;
+  text-align: left;
+}
+
 @media (max-width: 800px) {
   .practice-strip {
     grid-template-columns: 1fr 1fr;

@@ -8,9 +8,11 @@ import {
   mergePracticeLogs,
   practiceStreak,
   readScoreStore,
+  removePracticeScores,
   scoresFromCritique,
   sparklineGeometry,
   summarizePractice,
+  updatePracticeNotes,
   upsertPracticeScore,
 } from "./practiceStats.js";
 
@@ -109,6 +111,86 @@ test("streak counts today or yesterday and stops at a gap", () => {
   assert.equal(practiceStreak([day(0), day(-2)], today), 1);
   assert.equal(practiceStreak([day(-3)], today), 0);
   assert.equal(practiceStreak([], today), 0);
+});
+
+test("merged logs keep the database id so a saved take can be edited or deleted", () => {
+  const rows = mergePracticeLogs(
+    [
+      {
+        id: 12,
+        date: "10-26-2026-09.15.00",
+        link: "https://cdn.example/a.webm",
+        notes: "Hi",
+      },
+    ],
+    [
+      {
+        id: "11-1-2026-08.00.00",
+        url: "https://cdn.example/local.webm",
+        notes: "Device",
+        scores: { average: 7 },
+      },
+    ],
+  );
+  assert.equal(rows[0].id, 12);
+  assert.equal(rows[0].localOnly, false);
+  assert.equal(rows[1].id, null);
+  assert.equal(rows[1].localOnly, true);
+  assert.equal(rows[1].notes, "Device");
+  assert.equal(rows[1].link, "https://cdn.example/local.webm");
+});
+
+test("notes and deletes update only the matching local scores", () => {
+  const storage = memoryStorage();
+  upsertPracticeScore(
+    {
+      id: "10-26-2026-09.15.00",
+      url: "https://cdn.example/a.webm",
+      notes: "A",
+    },
+    storage,
+  );
+  upsertPracticeScore(
+    {
+      id: "10-27-2026-09.15.00",
+      url: "https://cdn.example/b.webm",
+      notes: "B",
+    },
+    storage,
+  );
+  upsertPracticeScore(
+    { id: "", url: "https://cdn.example/c.webm", notes: "C" },
+    storage,
+  );
+
+  updatePracticeNotes(
+    { id: "10-26-2026-09.15.00", notes: "Steady close" },
+    storage,
+  );
+  assert.equal(readScoreStore(storage)[0].notes, "Steady close");
+  assert.equal(readScoreStore(storage)[1].notes, "B");
+
+  removePracticeScores({ id: "10-26-2026-09.15.00" }, storage);
+  removePracticeScores({ url: "https://cdn.example/c.webm" }, storage);
+  const left = readScoreStore(storage);
+  assert.deepEqual(
+    left.map((record) => record.id),
+    ["10-27-2026-09.15.00"],
+  );
+
+  removePracticeScores({}, storage);
+  assert.equal(readScoreStore(storage).length, 1);
+  const broken = {
+    getItem: () => "{",
+    setItem() {
+      throw new Error("full");
+    },
+  };
+  assert.doesNotThrow(() =>
+    updatePracticeNotes({ id: "x", notes: "y" }, broken),
+  );
+  assert.doesNotThrow(() => removePracticeScores({ id: "x" }, broken));
+  assert.equal(readScoreStore(broken).length, 0);
 });
 
 test("sparkline puts a higher score above a lower score", () => {
