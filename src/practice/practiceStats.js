@@ -120,12 +120,46 @@ export function upsertPracticeScore(partial, storage = globalThis.localStorage) 
   const next = index >= 0
     ? current.map((record, recordIndex) => (recordIndex === index ? nextRecord : record))
     : [...current, nextRecord];
-  try {
-    storage?.setItem(SCORE_STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // Private mode and full storage should not block the critique.
-  }
+  writeScoreStore(next, storage);
   return nextRecord;
+}
+
+function writeScoreStore(records, storage) {
+  try {
+    storage?.setItem(SCORE_STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    // Private mode and full storage should not block the critique or a log edit.
+  }
+}
+
+export function practiceScoreMatches(record, target = {}) {
+  if (!record || typeof record !== "object") return false;
+  const id = typeof target.id === "string" ? target.id : "";
+  const url = typeof target.url === "string" ? target.url : "";
+  if (!id && !url) return false;
+  if (id && record.id === id) return true;
+  if (url && record.url === url) return true;
+  return false;
+}
+
+export function updatePracticeNotes({ id = "", url = "", notes = "" } = {}, storage = globalThis.localStorage) {
+  const text = typeof notes === "string" ? notes : "";
+  const current = readScoreStore(storage);
+  let changed = false;
+  const next = current.map((record) => {
+    if (!practiceScoreMatches(record, { id, url })) return record;
+    changed = true;
+    return { ...record, notes: text };
+  });
+  if (changed) writeScoreStore(next, storage);
+  return next;
+}
+
+export function removePracticeScores({ id = "", url = "" } = {}, storage = globalThis.localStorage) {
+  const current = readScoreStore(storage);
+  const next = current.filter((record) => !practiceScoreMatches(record, { id, url }));
+  if (next.length !== current.length) writeScoreStore(next, storage);
+  return next;
 }
 
 function recordTime(record) {
@@ -174,6 +208,7 @@ export function mergePracticeLogs(videos, records) {
     const matchIndex = matches[index];
     return {
       key: `${video?.date || video?.link || "row"}-${index}`,
+      id: video?.id ?? null,
       date: video?.date || "",
       link: video?.link || "",
       notes: video?.notes || "",
@@ -187,6 +222,7 @@ export function mergePracticeLogs(videos, records) {
     if (!record?.id && !record?.url) continue;
     rows.push({
       key: record.id || record.url || `local-${index}`,
+      id: null,
       date: record.id || "",
       link: record.url || "",
       notes: record.notes || "",
