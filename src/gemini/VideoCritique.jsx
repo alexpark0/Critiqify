@@ -19,6 +19,7 @@ const PHASE_COPY = {
   process: "Processing your video…",
   grade: "Grading cadence, eye contact, filler words, and intonation…",
   retry: "Gemini's first answer couldn't be read. Trying again…",
+  "retry-http": "Gemini returned an error. Trying again…",
 };
 
 function nextMessageId() {

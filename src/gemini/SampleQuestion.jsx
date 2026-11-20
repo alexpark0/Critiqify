@@ -53,15 +53,11 @@ const SampleQuestion = ({
       setStatus("ready");
     } catch (caught) {
       const parsed = toCritiqueError(caught);
-      if (parsed.kind === "model") {
-        setError({
-          kind: "model",
-          message:
-            "Couldn't generate a question. The AI service may be unavailable.",
-        });
-      } else {
-        setError(parsed);
+      if (parsed.kind === "aborted") {
+        setStatus("idle");
+        return;
       }
+      setError(parsed);
       setStatus("error");
     }
   }

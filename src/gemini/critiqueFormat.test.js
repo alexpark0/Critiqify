@@ -155,6 +155,54 @@ test("toCritiqueError distinguishes a bad key, an abort, and a model failure", (
 
   const model = toCritiqueError(new Error("Model is overloaded"));
   assert.equal(model.kind, "model");
+  assert.match(model.message, /temporarily unavailable/i);
+  assert.equal(model.retryable, true);
+
+  const missingModel = toCritiqueError(
+    Object.assign(
+      new Error(
+        JSON.stringify({
+          error: {
+            code: 404,
+            message: "models/gemini-3.5-flash-lite is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models.",
+            status: "NOT_FOUND",
+          },
+        }),
+      ),
+      { status: 404 },
+    ),
+  );
+  assert.equal(missingModel.kind, "model_missing");
+  assert.equal(missingModel.retryable, false);
+  assert.match(missingModel.message, /gemini-3\.5-flash-lite/);
+  assert.match(missingModel.message, /not found/);
+  assert.match(missingModel.detail, /HTTP 404/);
+
+  const limited = toCritiqueError(
+    Object.assign(
+      new Error(
+        JSON.stringify({
+          error: {
+            code: 429,
+            message: "You exceeded your current quota, please check your plan and billing details.",
+            status: "RESOURCE_EXHAUSTED",
+          },
+        }),
+      ),
+      { status: 429 },
+    ),
+  );
+  assert.equal(limited.kind, "quota");
+  assert.equal(limited.retryable, true);
+  assert.match(limited.message, /rate-limited/);
+  assert.match(limited.message, /quota/);
+
+  const rejected = toCritiqueError(
+    Object.assign(new Error("Request contains an invalid argument."), { status: 400 }),
+  );
+  assert.equal(rejected.kind, "model");
+  assert.equal(rejected.retryable, false);
+  assert.match(rejected.message, /invalid argument/);
 
   const preserved = new CritiqueError("upload", "upload failed");
   assert.equal(toCritiqueError(preserved), preserved);
@@ -246,4 +294,6 @@ test("key messages point at AI Studio and VITE_API_KEY", () => {
   assert.match(rejectedKeyMessage(), /invalid or expired/);
   assert.equal(titleForKind("missing_key"), "Gemini API key needed");
   assert.equal(titleForKind("upload"), "Upload failed");
+  assert.equal(titleForKind("quota"), "Gemini rate limit");
+  assert.equal(titleForKind("model_missing"), "Gemini model not available");
 });

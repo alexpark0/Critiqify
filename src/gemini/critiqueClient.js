@@ -7,6 +7,7 @@ import {
   deliveryMode,
   describeGenerateResult,
   fileFailedMessage,
+  geminiHttpStatus,
   isFileNotReadyError,
   isRetryableGeminiError,
   mockChatReply,
@@ -89,12 +90,12 @@ async function videoPartFor(ai, videoFile, signal, onProgress) {
   if (mode === "inline") {
     const data = await blobToBase64(videoFile);
     return {
-      part: {
+      part: withStaticVideo({
         inlineData: {
           mimeType,
           data,
         },
-      },
+      }),
       file: null,
     };
   }
@@ -131,8 +132,16 @@ function fileGetter(ai, signal) {
     });
 }
 
+function withStaticVideo(part) {
+  // Short interview clips need every frame and the audio in one pass.
+  // Omitting mediaProcessing means "model-specific." Agentic navigation is
+  // opt-in today and spends the output budget on thought tokens. Static is
+  // the documented mode for clips under a few minutes, so set it explicitly.
+  return { ...part, mediaProcessing: "STATIC" };
+}
+
 function partFromFile(file, mimeType) {
-  return createPartFromUri(file.uri, file.mimeType || mimeType);
+  return withStaticVideo(createPartFromUri(file.uri, file.mimeType || mimeType));
 }
 
 export async function pollFileUntilActive({
@@ -168,7 +177,9 @@ export async function pollFileUntilActive({
       if (signal?.aborted || error?.name === "AbortError") throw abortError();
       const classified = toCritiqueError(error);
       if (classified.kind === "auth" || classified.kind === "missing_key") throw classified;
-      if (!isRetryableGeminiError(error)) throw new CritiqueError("upload", uploadMessage());
+      if (!isRetryableGeminiError(error)) {
+        throw new CritiqueError("upload", uploadMessage(), { detail: classified.detail });
+      }
       delayMs = nextPollDelayMs(delayMs);
       continue;
     }
@@ -187,7 +198,7 @@ function asUploadError(error, signal) {
   if (signal?.aborted || error?.name === "AbortError") return abortError();
   const classified = toCritiqueError(error);
   if (classified.kind === "auth" || classified.kind === "missing_key") return classified;
-  return new CritiqueError("upload", uploadMessage());
+  return new CritiqueError("upload", uploadMessage(), { detail: classified.detail });
 }
 
 function responseText(response) {
@@ -334,8 +345,8 @@ function gradeConfig(signal) {
     responseSchema: critiqueResponseSchema,
     temperature: 0.4,
     maxOutputTokens: OUTPUT_TOKEN_LIMIT,
-    // gemini-3.8-flash thinks at medium by default, and those tokens count
-    // against maxOutputTokens. Low keeps the JSON from being cut off.
+    // Flash-Lite thinks by default, and those tokens count against
+    // maxOutputTokens. Low keeps the JSON from being cut off.
     thinkingConfig: { thinkingLevel: "LOW" },
     abortSignal: signal,
   };
@@ -413,8 +424,13 @@ async function generateCritique(ai, media, prompt, signal, onProgress) {
         });
         media.part = partFromFile(media.file, normalizeVideoMimeType(media.file.mimeType));
       } else {
-        logCritique("info", "retrying critique", { attempt, waitMs: 1000 * attempt });
-        onProgress?.("retry");
+        const httpFailure = geminiHttpStatus(error) >= 400;
+        logCritique("info", "retrying critique", {
+          attempt,
+          waitMs: 1000 * attempt,
+          http: httpFailure,
+        });
+        onProgress?.(httpFailure ? "retry-http" : "retry");
         await delay(1000 * attempt, signal);
       }
       onProgress?.("grade");

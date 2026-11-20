@@ -1,10 +1,13 @@
 /**
- * Stable Gemini model with video and audio input plus structured JSON output.
- * Confirmed on the Gemini API model page (GA, September 2026): inputs include
- * video, output is text, and structured outputs are supported. Thinking defaults
- * to medium and counts against maxOutputTokens, so critique requests lower it.
+ * Gemini model with video and audio input plus structured JSON output.
+ * gemini-3.8-flash is still listed, but a free-tier generateContent call to it
+ * returns HTTP 503 "This model is currently experiencing high demand" and has
+ * kept doing so. gemini-3.5-flash-lite is on the same v1beta model list, accepts
+ * video/webm (picture and audio), JSON schema, and thinking level LOW, and
+ * returns a normal response. Critique requests still lower thinking so those
+ * tokens do not eat the output limit.
  */
-export const GEMINI_MODEL = "gemini-3.8-flash";
+export const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 function readEnv(name) {
   const viteEnv = import.meta.env;
