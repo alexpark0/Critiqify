@@ -4,15 +4,12 @@ import { teleprompterView } from "../record/teleprompter.js";
 import { createGeminiClient } from "./geminiClient.js";
 import { toCritiqueError } from "./critiqueFormat.js";
 import { GEMINI_MODEL, isMockGemini } from "./geminiEnv.js";
+import {
+  initialSampleVariant,
+  mockSampleQuestion,
+  sampleQuestionPrompt,
+} from "./sampleQuestions.js";
 import GeminiAlert from "./GeminiAlert.jsx";
-
-const MOCK_QUESTIONS = [
-  "Tell me about a time you diagnosed a tricky bug in a service you owned, and how you decided what to fix first.",
-  "Describe a time you disagreed with a teammate about a technical decision. How did you resolve it?",
-];
-
-const PROMPT =
-  "give me a sample interview question for a software engineering internship. respond in one sentence.";
 
 const SampleQuestion = ({
   onQuestion,
@@ -23,7 +20,7 @@ const SampleQuestion = ({
 }) => {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
-  const [mockIndex, setMockIndex] = useState(0);
+  const [variant, setVariant] = useState(() => initialSampleVariant(question));
   const prompt = teleprompterView({
     question,
     elapsedSeconds,
@@ -34,17 +31,17 @@ const SampleQuestion = ({
   async function aiRun() {
     setStatus("loading");
     setError(null);
+    const current = variant;
     try {
       let text = "";
       if (isMockGemini()) {
         await new Promise((resolve) => setTimeout(resolve, 400));
-        text = MOCK_QUESTIONS[mockIndex % MOCK_QUESTIONS.length];
-        setMockIndex((index) => index + 1);
+        text = mockSampleQuestion(current);
       } else {
         const ai = createGeminiClient("generating a question");
         const response = await ai.models.generateContent({
           model: GEMINI_MODEL,
-          contents: PROMPT,
+          contents: sampleQuestionPrompt(current, question),
         });
         text = typeof response.text === "string" ? response.text.trim() : "";
         if (!text) {
@@ -52,6 +49,7 @@ const SampleQuestion = ({
         }
       }
       onQuestion?.(text);
+      setVariant((index) => index + 1);
       setStatus("ready");
     } catch (caught) {
       const parsed = toCritiqueError(caught);
@@ -72,7 +70,11 @@ const SampleQuestion = ({
     <section className="teleprompter" aria-label="Teleprompter">
       <div className="teleprompter-bar">
         <p className="teleprompter-cue">{prompt.cue}</p>
-        <span className={`timer-pill is-${prompt.timerMode}`} role="timer" aria-label={prompt.timerLabel}>
+        <span
+          className={`timer-pill is-${prompt.timerMode}`}
+          role="timer"
+          aria-label={prompt.timerLabel}
+        >
           {prompt.timerMode === "recording" ? (
             <span className="recording-dot" aria-hidden="true" />
           ) : null}
@@ -88,7 +90,13 @@ const SampleQuestion = ({
         </p>
       ) : null}
       {error ? <GeminiAlert kind={error.kind} message={error.message} /> : null}
-      <p className={prompt.hasQuestion ? "teleprompter-question" : "teleprompter-question is-placeholder"}>
+      <p
+        className={
+          prompt.hasQuestion
+            ? "teleprompter-question"
+            : "teleprompter-question is-placeholder"
+        }
+      >
         {prompt.question}
       </p>
     </section>
